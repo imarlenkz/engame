@@ -14,3 +14,4 @@ test-results/
 *.tsbuildinfo
 next-env.d.ts
 dump.rdb
+infra/monitoring/metrics_token

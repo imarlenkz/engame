@@ -44,7 +44,6 @@ const schema = z
     SPEECH_API_KEY: z.string().optional(),
     SPEECH_MODEL: z.string().default('whisper-1'),
 
-    SENTRY_DSN: z.string().optional(),
     METRICS_TOKEN: z.string().optional(),
     SWAGGER_PUBLIC: bool.default('false'),
   })
@@ -73,7 +72,9 @@ const schema = z
 export type Env = z.infer<typeof schema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const parsed = schema.safeParse(source);
+  // Docker Compose passes unset optional variables as empty strings; treat those as not set.
+  const cleaned = Object.fromEntries(Object.entries(source).filter(([, v]) => v !== undefined && v.trim() !== ''));
+  const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.') || 'env'}: ${i.message}`).join('\n  ');
     throw new Error(`Invalid environment:\n  ${issues}`);

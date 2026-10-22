@@ -1,3 +1,6 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 /** @type {import('next').NextConfig} */
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 
@@ -19,6 +22,8 @@ const csp = [
 
 export default {
   output: 'standalone',
+  // Trace workspace packages from the monorepo root so the standalone server includes them.
+  outputFileTracingRoot: path.join(path.dirname(fileURLToPath(import.meta.url)), '../..'),
   reactStrictMode: true,
   poweredByHeader: false,
   // Lets `next dev` / `next start` work without nginx; in production nginx sends /api straight to the API.
