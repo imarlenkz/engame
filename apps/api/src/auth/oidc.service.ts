@@ -90,7 +90,7 @@ export class OidcService {
       state: randomToken(16),
       nonce: randomToken(16),
       verifier: randomToken(32),
-      returnTo: returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/',
+      returnTo: /^\/(?![/\\])[^\s\\]*$/.test(returnTo) ? returnTo : '/',
       exp: Date.now() + 10 * 60_000,
     };
     const challenge = createHash('sha256').update(state.verifier).digest('base64url');

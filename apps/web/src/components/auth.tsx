@@ -14,8 +14,9 @@ export function useAuthOptions() {
 }
 
 /** Only same-site relative paths are followed after sign-in. */
+/** Only same-site paths: browsers read `//host` and `/\\host` as other sites. */
 export function safeNext(next: string | null): string | null {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+  return next && /^\/(?![/\\])[^\s\\]*$/.test(next) ? next : null;
 }
 
 export function ImarlenButton({ next }: { next: string | null }) {

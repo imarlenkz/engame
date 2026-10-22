@@ -27,6 +27,11 @@
     "test": {
       "dependsOn": [
         "^build"
+      ],
+      "env": [
+        "TEST_DATABASE_URL",
+        "TEST_REDIS_URL",
+        "TEST_STORAGE_DIR"
       ]
     },
     "dev": {
@@ -34,6 +39,12 @@
       "persistent": true,
       "dependsOn": [
         "^build"
+      ]
+    },
+    "@engame/web#typecheck": {
+      "dependsOn": [
+        "^build",
+        "@engame/web#build"
       ]
     }
   }

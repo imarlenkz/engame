@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      NEXT_TELEMETRY_DISABLED: '1'
+      TURBO_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm turbo run build
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+      - name: Unit and API integration tests
+        run: pnpm turbo run test
+
+      - name: Prepare E2E database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/engame_e2e
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:5432/postgres -c 'CREATE DATABASE engame_e2e'
+          pnpm --filter @engame/database migrate:deploy
+          pnpm --filter @engame/database seed
+      - name: Start API and web
+        env:
+          NODE_ENV: production
+          PORT: 4000
+          APP_ORIGIN: http://localhost:3000
+          APP_SECRET: ci-e2e-secret-ci-e2e-secret-0123456789
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/engame_e2e
+          REDIS_URL: redis://127.0.0.1:6379/1
+          STORAGE_LOCAL_DIR: ${{ runner.temp }}/uploads
+          TRUST_PROXY_HOPS: 2
+          ADMIN_PASSWORD: ci-admin-password-123
+        run: |
+          node apps/api/dist/cli.js create-admin admin-e2e@example.com CI Admin
+          nohup node apps/api/dist/main.js > api.log 2>&1 &
+          (cd apps/web && nohup npx next start -p 3000 > ../../web.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/v1/ready && break; sleep 2; done
+      - name: Install Playwright browser
+        run: pnpm --filter @engame/web exec playwright install --with-deps chromium
+      - name: E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_ADMIN_EMAIL: admin-e2e@example.com
+          E2E_ADMIN_PASSWORD: ci-admin-password-123
+        run: pnpm --filter @engame/web e2e
+      - name: Upload E2E report and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+            api.log
+            web.log
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build images
+        run: |
+          for target in api web tools; do
+            docker buildx build -f infra/docker/Dockerfile --target "$target" -t "engame-$target:ci" .
+          done
+      - name: Validate compose file
+        run: |
+          cp .env.example .env
+          sed -i 's/^APP_SECRET=$/APP_SECRET=ci-only-secret-ci-only-secret-0123/; s/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=ci/' .env
+          docker compose config --quiet
