@@ -1,0 +1,21 @@
+{
+  "name": "engame",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:migrate": "pnpm --filter @engame/database migrate:dev",
+    "db:deploy": "pnpm --filter @engame/database migrate:deploy",
+    "db:seed": "pnpm --filter @engame/database seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "prettier": "^3.5.0"
+  }
+}

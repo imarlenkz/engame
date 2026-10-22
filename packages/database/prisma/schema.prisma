@@ -1,0 +1,900 @@
+// Engame database schema.
+// All learning content (letters, phonemes, words, lessons, exercises, games, achievements) lives here
+// and is edited through the admin CMS, never hardcoded in application code.
+// Localised content fields are JSON objects shaped { "en": "...", "kk": "...", "ru": "..." }.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Identity ─────────────────────────────
+
+enum Role {
+  ADMIN
+  TEACHER
+  PARENT
+  CHILD
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  /// Stable subject from iMARLEN ID (id.imarlen.kz). Null for local-password accounts.
+  idpSub       String?    @unique @map("idp_sub")
+  email        String?    @unique
+  /// argon2id hash. Null for accounts that only sign in through iMARLEN ID.
+  passwordHash String?    @map("password_hash")
+  displayName  String     @map("display_name")
+  locale       String     @default("kk")
+  failedLogins Int        @default(0) @map("failed_logins")
+  lockedUntil  DateTime?  @map("locked_until")
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  sessions       Session[]
+  parentProfile  ParentProfile?
+  teacherProfile TeacherProfile?
+  childProfile   ChildProfile?    @relation("ChildLogin")
+  auditLogs      AuditLog[]
+  subscriptions  Subscription[]
+  uploadedAudio  AudioAsset[]
+  uploadedImages ImageAsset[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Session {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  /// SHA-256 of the opaque cookie token; the raw token is never stored.
+  tokenHash     String    @unique @map("token_hash")
+  /// Child currently selected by a parent on this device (parent-managed child profiles).
+  activeChildId String?   @map("active_child_id") @db.Uuid
+  /// Parent mode unlocked until this time (re-entry requires the parent PIN/password).
+  parentModeUntil DateTime? @map("parent_mode_until")
+  userAgent     String?   @map("user_agent")
+  expiresAt     DateTime  @map("expires_at")
+  revokedAt     DateTime? @map("revoked_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at")
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeChild ChildProfile? @relation(fields: [activeChildId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model ParentProfile {
+  userId    String   @id @map("user_id") @db.Uuid
+  /// bcrypt/argon2 hash of a 4–6 digit PIN guarding parent mode on a shared device.
+  pinHash   String?  @map("pin_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children Guardianship[]
+  consents ConsentRecord[]
+
+  @@map("parent_profiles")
+}
+
+model TeacherProfile {
+  userId     String   @id @map("user_id") @db.Uuid
+  schoolName String?  @map("school_name")
+  schoolCode String?  @map("school_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classes Class[]
+
+  @@map("teacher_profiles")
+}
+
+enum AgeGroup {
+  AGE_4_5
+  AGE_6_7
+  AGE_8_9
+  AGE_10_11
+}
+
+/// A learner. Deliberately minimal: nickname, avatar, age group. No real name, birthday or photo.
+model ChildProfile {
+  id         String   @id @default(uuid()) @db.Uuid
+  /// Set when the child signs in on their own (a student account from iMARLEN ID).
+  userId     String?  @unique @map("user_id") @db.Uuid
+  nickname   String
+  avatar     String   @default("fox")
+  ageGroup   AgeGroup @map("age_group")
+  xp         Int      @default(0)
+  coins      Int      @default(0)
+  level      Int      @default(1)
+  hearts     Int      @default(5)
+  /// Lesson the child should continue with; chosen by placement and advanced on completion.
+  currentLessonId String?   @map("current_lesson_id") @db.Uuid
+  placementDoneAt DateTime? @map("placement_done_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  user             User?               @relation("ChildLogin", fields: [userId], references: [id], onDelete: SetNull)
+  currentLesson    Lesson?             @relation("CurrentLesson", fields: [currentLessonId], references: [id], onDelete: SetNull)
+  guardians        Guardianship[]
+  classMemberships ClassMember[]
+  sessions         Session[]
+  lessonProgress   LessonProgress[]
+  mastery          Mastery[]
+  attempts         Attempt[]
+  gameSessions     GameSession[]
+  achievements     UserAchievement[]
+  rewards          RewardLedger[]
+  streak           Streak?
+  dailyMissions    ChildDailyMission[]
+  placement        PlacementResult?
+  consents         ConsentRecord[]
+
+  @@index([deletedAt])
+  @@map("child_profiles")
+}
+
+model Guardianship {
+  parentId  String   @map("parent_id") @db.Uuid
+  childId   String   @map("child_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent ParentProfile @relation(fields: [parentId], references: [userId], onDelete: Cascade)
+  child  ChildProfile  @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, childId])
+  @@index([childId])
+  @@map("guardianships")
+}
+
+enum ConsentType {
+  DATA_PROCESSING
+  VOICE_PROCESSING
+  VOICE_STORAGE
+}
+
+/// Append-only record of parental consent. The latest row per (child, type) is the current state.
+model ConsentRecord {
+  id        String      @id @default(uuid()) @db.Uuid
+  parentId  String      @map("parent_id") @db.Uuid
+  childId   String      @map("child_id") @db.Uuid
+  type      ConsentType
+  granted   Boolean
+  version   String
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  parent ParentProfile @relation(fields: [parentId], references: [userId], onDelete: Cascade)
+  child  ChildProfile  @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId, type, createdAt])
+  @@map("consent_records")
+}
+
+model Class {
+  id         String   @id @default(uuid()) @db.Uuid
+  teacherId  String   @map("teacher_id") @db.Uuid
+  name       String
+  /// Short code a parent can enter to add their child to the class.
+  joinCode   String   @unique @map("join_code")
+  archivedAt DateTime? @map("archived_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  members     ClassMember[]
+  assignments Assignment[]
+
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassMember {
+  classId  String   @map("class_id") @db.Uuid
+  childId  String   @map("child_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  class Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  child ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@id([classId, childId])
+  @@index([childId])
+  @@map("class_members")
+}
+
+enum AssignmentKind {
+  LESSON
+  HOMEWORK
+}
+
+model Assignment {
+  id        String         @id @default(uuid()) @db.Uuid
+  classId   String         @map("class_id") @db.Uuid
+  lessonId  String         @map("lesson_id") @db.Uuid
+  kind      AssignmentKind @default(LESSON)
+  dueAt     DateTime?      @map("due_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
+  @@map("assignments")
+}
+
+// ───────────────────────────── Content (CMS) ─────────────────────────────
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model World {
+  id        String        @id @default(uuid()) @db.Uuid
+  slug      String        @unique
+  order     Int
+  title     Json
+  theme     String        @default("forest")
+  icon      String        @default("🌳")
+  status    PublishStatus @default(DRAFT)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  levels Level[]
+
+  @@index([status, order])
+  @@map("worlds")
+}
+
+model Level {
+  id        String        @id @default(uuid()) @db.Uuid
+  worldId   String        @map("world_id") @db.Uuid
+  slug      String        @unique
+  order     Int
+  title     Json
+  status    PublishStatus @default(DRAFT)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  world   World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+  games   Game[]
+
+  @@index([worldId, order])
+  @@map("levels")
+}
+
+model Letter {
+  id        String        @id @default(uuid()) @db.Uuid
+  /// Upper-case letter, e.g. "A".
+  char      String        @unique
+  /// Spoken letter name, e.g. "ay".
+  name      String
+  order     Int           @unique
+  isVowel   Boolean       @default(false) @map("is_vowel")
+  exampleWordId String?   @map("example_word_id") @db.Uuid
+  audioId   String?       @map("audio_id") @db.Uuid
+  imageId   String?       @map("image_id") @db.Uuid
+  status    PublishStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  exampleWord Word?       @relation(fields: [exampleWordId], references: [id], onDelete: SetNull)
+  audio       AudioAsset? @relation("LetterAudio", fields: [audioId], references: [id], onDelete: SetNull)
+  image       ImageAsset? @relation("LetterImage", fields: [imageId], references: [id], onDelete: SetNull)
+  lessons     Lesson[]
+
+  @@map("letters")
+}
+
+enum PhonemeCategory {
+  SHORT_VOWEL
+  LONG_VOWEL
+  DIPHTHONG
+  R_CONTROLLED
+  CONSONANT
+  DIGRAPH
+}
+
+/// One of the 44 English phonemes ("sounds" in the UI).
+model Phoneme {
+  id          String          @id @default(uuid()) @db.Uuid
+  slug        String          @unique
+  /// Main spelling shown to the child, e.g. "sh".
+  symbol      String
+  /// IPA without slashes, e.g. "ʃ".
+  ipa         String          @unique
+  category    PhonemeCategory
+  voiced      Boolean
+  /// Localised description of lips/tongue position.
+  mouthPosition Json          @map("mouth_position")
+  /// Localised short tip for the child.
+  tip         Json?
+  difficulty  Int             @default(1)
+  order       Int             @unique
+  audioId     String?         @map("audio_id") @db.Uuid
+  mouthImageId String?        @map("mouth_image_id") @db.Uuid
+  status      PublishStatus   @default(DRAFT)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  graphemes   PhonemeGrapheme[]
+  audio       AudioAsset?     @relation("PhonemeAudio", fields: [audioId], references: [id], onDelete: SetNull)
+  mouthImage  ImageAsset?     @relation("PhonemeMouth", fields: [mouthImageId], references: [id], onDelete: SetNull)
+  wordPhonemes WordPhoneme[]
+  lessons     Lesson[]
+  questions   Question[]
+  attempts    Attempt[]
+
+  @@index([status, order])
+  @@map("phonemes")
+}
+
+/// Spellings of a phoneme: /iː/ → ee, ea, e_e, y …
+model PhonemeGrapheme {
+  id        String  @id @default(uuid()) @db.Uuid
+  phonemeId String  @map("phoneme_id") @db.Uuid
+  grapheme  String
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  phoneme Phoneme @relation(fields: [phonemeId], references: [id], onDelete: Cascade)
+
+  @@unique([phonemeId, grapheme])
+  @@map("phoneme_graphemes")
+}
+
+enum WordPattern {
+  CVC
+  CCVC
+  CVCC
+  CCVCC
+  DIGRAPH
+  SIGHT
+  OTHER
+}
+
+model Word {
+  id           String        @id @default(uuid()) @db.Uuid
+  text         String        @unique
+  pattern      WordPattern
+  emoji        String?
+  /// Localised meaning, e.g. { "kk": "мысық", "ru": "кошка" }.
+  translation  Json
+  difficulty   Int           @default(1)
+  isSightWord  Boolean       @default(false) @map("is_sight_word")
+  audioId      String?       @map("audio_id") @db.Uuid
+  imageId      String?       @map("image_id") @db.Uuid
+  status       PublishStatus @default(DRAFT)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  phonemes   WordPhoneme[]
+  audio      AudioAsset?   @relation("WordAudio", fields: [audioId], references: [id], onDelete: SetNull)
+  image      ImageAsset?   @relation("WordImage", fields: [imageId], references: [id], onDelete: SetNull)
+  letters    Letter[]
+  questions  Question[]
+  attempts   Attempt[]
+  sentences  SentenceWord[]
+
+  @@index([status, pattern, difficulty])
+  @@map("words")
+}
+
+/// Ordered phoneme breakdown of a word with the letters that spell each sound: ship → sh·i·p.
+model WordPhoneme {
+  wordId    String @map("word_id") @db.Uuid
+  position  Int
+  phonemeId String @map("phoneme_id") @db.Uuid
+  grapheme  String
+
+  word    Word    @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  phoneme Phoneme @relation(fields: [phonemeId], references: [id], onDelete: Restrict)
+
+  @@id([wordId, position])
+  @@index([phonemeId])
+  @@map("word_phonemes")
+}
+
+model Sentence {
+  id          String        @id @default(uuid()) @db.Uuid
+  text        String
+  translation Json
+  difficulty  Int           @default(1)
+  audioId     String?       @map("audio_id") @db.Uuid
+  imageId     String?       @map("image_id") @db.Uuid
+  status      PublishStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  audio AudioAsset?    @relation("SentenceAudio", fields: [audioId], references: [id], onDelete: SetNull)
+  image ImageAsset?    @relation("SentenceImage", fields: [imageId], references: [id], onDelete: SetNull)
+  words SentenceWord[]
+  questions Question[]
+
+  @@map("sentences")
+}
+
+model SentenceWord {
+  sentenceId String @map("sentence_id") @db.Uuid
+  position   Int
+  wordId     String @map("word_id") @db.Uuid
+
+  sentence Sentence @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
+  word     Word     @relation(fields: [wordId], references: [id], onDelete: Restrict)
+
+  @@id([sentenceId, position])
+  @@index([wordId])
+  @@map("sentence_words")
+}
+
+enum LessonKind {
+  LETTER
+  SOUND
+  BLEND
+  WORD
+  SENTENCE
+  READING
+  REVIEW
+}
+
+model Lesson {
+  id               String        @id @default(uuid()) @db.Uuid
+  slug             String        @unique
+  levelId          String        @map("level_id") @db.Uuid
+  order            Int
+  kind             LessonKind
+  title            Json
+  focusPhonemeId   String?       @map("focus_phoneme_id") @db.Uuid
+  focusLetterId    String?       @map("focus_letter_id") @db.Uuid
+  estimatedMinutes Int           @default(7) @map("estimated_minutes")
+  xpReward         Int           @default(20) @map("xp_reward")
+  coinReward       Int           @default(5) @map("coin_reward")
+  status           PublishStatus @default(DRAFT)
+  publishedAt      DateTime?     @map("published_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  level        Level          @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  focusPhoneme Phoneme?       @relation(fields: [focusPhonemeId], references: [id], onDelete: SetNull)
+  focusLetter  Letter?        @relation(fields: [focusLetterId], references: [id], onDelete: SetNull)
+  exercises    Exercise[]
+  progress     LessonProgress[]
+  assignments  Assignment[]
+  currentFor   ChildProfile[] @relation("CurrentLesson")
+
+  @@index([levelId, order])
+  @@index([status])
+  @@map("lessons")
+}
+
+enum LessonStage {
+  INTRO
+  TEACH
+  LISTEN
+  WATCH
+  REPEAT
+  PRACTICE
+  GAME
+  QUIZ
+  REVIEW
+  REWARD
+}
+
+/// One step of a lesson. `type` is a key in the phonics-engine registry (e.g. "letter_to_sound",
+/// "word_builder"); `config` is validated by that type's schema, so new types need no schema change.
+model Exercise {
+  id        String      @id @default(uuid()) @db.Uuid
+  lessonId  String      @map("lesson_id") @db.Uuid
+  order     Int
+  stage     LessonStage
+  type      String
+  config    Json        @default("{}")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  lesson    Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  Attempt[]
+
+  @@unique([lessonId, order])
+  @@index([type])
+  @@map("exercises")
+}
+
+/// A single item inside an exercise or quiz. `answer` is never sent to the client before grading.
+model Question {
+  id         String   @id @default(uuid()) @db.Uuid
+  exerciseId String   @map("exercise_id") @db.Uuid
+  order      Int
+  prompt     Json
+  answer     Json
+  phonemeId  String?  @map("phoneme_id") @db.Uuid
+  wordId     String?  @map("word_id") @db.Uuid
+  sentenceId String?  @map("sentence_id") @db.Uuid
+
+  exercise Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  phoneme  Phoneme?  @relation(fields: [phonemeId], references: [id], onDelete: SetNull)
+  word     Word?     @relation(fields: [wordId], references: [id], onDelete: SetNull)
+  sentence Sentence? @relation(fields: [sentenceId], references: [id], onDelete: SetNull)
+  attempts Attempt[]
+
+  @@unique([exerciseId, order])
+  @@map("questions")
+}
+
+/// A standalone game in the Games menu. `type` is a key in the game-engine registry.
+model Game {
+  id         String        @id @default(uuid()) @db.Uuid
+  slug       String        @unique
+  type       String
+  title      Json
+  levelId    String?       @map("level_id") @db.Uuid
+  config     Json          @default("{}")
+  timed      Boolean       @default(false)
+  timeLimitSec Int?        @map("time_limit_sec")
+  status     PublishStatus @default(DRAFT)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  level    Level?        @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  sessions GameSession[]
+
+  @@index([status, type])
+  @@map("games")
+}
+
+model AudioAsset {
+  id           String   @id @default(uuid()) @db.Uuid
+  storageKey   String   @unique @map("storage_key")
+  mime         String
+  bytes        Int
+  durationMs   Int?     @map("duration_ms")
+  sha256       String
+  /// Text shown as a caption when the clip plays (accessibility).
+  caption      String?
+  uploadedById String?  @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  letters    Letter[]   @relation("LetterAudio")
+  phonemes   Phoneme[]  @relation("PhonemeAudio")
+  words      Word[]     @relation("WordAudio")
+  sentences  Sentence[] @relation("SentenceAudio")
+
+  @@index([sha256])
+  @@map("audio_assets")
+}
+
+model ImageAsset {
+  id           String   @id @default(uuid()) @db.Uuid
+  storageKey   String   @unique @map("storage_key")
+  mime         String
+  bytes        Int
+  width        Int?
+  height       Int?
+  alt          Json
+  sha256       String
+  uploadedById String?  @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  letters    Letter[]   @relation("LetterImage")
+  phonemes   Phoneme[]  @relation("PhonemeMouth")
+  words      Word[]     @relation("WordImage")
+  sentences  Sentence[] @relation("SentenceImage")
+
+  @@index([sha256])
+  @@map("image_assets")
+}
+
+// ───────────────────────────── Learning & progress ─────────────────────────────
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model LessonProgress {
+  childId       String         @map("child_id") @db.Uuid
+  lessonId      String         @map("lesson_id") @db.Uuid
+  status        ProgressStatus @default(IN_PROGRESS)
+  stars         Int            @default(0)
+  bestScore     Int            @default(0) @map("best_score")
+  runs          Int            @default(0)
+  timeSpentSec  Int            @default(0) @map("time_spent_sec")
+  startedAt     DateTime       @default(now()) @map("started_at")
+  completedAt   DateTime?      @map("completed_at")
+
+  child  ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  lesson Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([childId, lessonId])
+  @@index([lessonId])
+  @@index([childId, completedAt])
+  @@map("progress")
+}
+
+enum MasteryItem {
+  LETTER
+  PHONEME
+  WORD
+}
+
+/// Per-child mastery and spaced-repetition state for one letter, phoneme or word.
+model Mastery {
+  childId        String      @map("child_id") @db.Uuid
+  itemType       MasteryItem @map("item_type")
+  itemId         String      @map("item_id") @db.Uuid
+  /// 0–100. 0–39 needs practice, 40–69 learning, 70–89 good, 90–100 mastered.
+  score          Int         @default(0)
+  attempts       Int         @default(0)
+  correct        Int         @default(0)
+  mistakes       Int         @default(0)
+  avgResponseMs  Int?        @map("avg_response_ms")
+  pronunciationAvg Int?      @map("pronunciation_avg")
+  /// SM-2 style ease factor × 100.
+  ease           Int         @default(250)
+  intervalDays   Int         @default(0) @map("interval_days")
+  streak         Int         @default(0)
+  dueAt          DateTime    @default(now()) @map("due_at")
+  lastSeenAt     DateTime?   @map("last_seen_at")
+  masteredAt     DateTime?   @map("mastered_at")
+
+  child ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@id([childId, itemType, itemId])
+  @@index([childId, dueAt])
+  @@index([childId, score])
+  @@map("mastery")
+}
+
+model Attempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  childId       String   @map("child_id") @db.Uuid
+  /// Client-generated id; makes offline sync idempotent.
+  clientId      String   @unique @map("client_id")
+  exerciseId    String?  @map("exercise_id") @db.Uuid
+  questionId    String?  @map("question_id") @db.Uuid
+  gameSessionId String?  @map("game_session_id") @db.Uuid
+  /// Lesson run this answer belongs to (from the signed run token).
+  runId         String?  @map("run_id")
+  phonemeId     String?  @map("phoneme_id") @db.Uuid
+  wordId        String?  @map("word_id") @db.Uuid
+  correct       Boolean
+  /// 0–100 for graded items (pronunciation score, partial credit).
+  score         Int?
+  responseMs    Int?     @map("response_ms")
+  answer        Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  syncedAt      DateTime @default(now()) @map("synced_at")
+
+  child       ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  exercise    Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  question    Question?    @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  gameSession GameSession? @relation(fields: [gameSessionId], references: [id], onDelete: SetNull)
+  phoneme     Phoneme?     @relation(fields: [phonemeId], references: [id], onDelete: SetNull)
+  word        Word?        @relation(fields: [wordId], references: [id], onDelete: SetNull)
+
+  @@index([childId, createdAt])
+  @@index([runId])
+  @@index([phonemeId])
+  @@map("attempts")
+}
+
+model GameSession {
+  id         String    @id @default(uuid()) @db.Uuid
+  childId    String    @map("child_id") @db.Uuid
+  gameId     String?   @map("game_id") @db.Uuid
+  gameType   String    @map("game_type")
+  difficulty Int       @default(1)
+  score      Int       @default(0)
+  correct    Int       @default(0)
+  wrong      Int       @default(0)
+  xpEarned   Int       @default(0) @map("xp_earned")
+  coinsEarned Int      @default(0) @map("coins_earned")
+  startedAt  DateTime  @default(now()) @map("started_at")
+  endedAt    DateTime? @map("ended_at")
+
+  child    ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  game     Game?        @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  attempts Attempt[]
+
+  @@index([childId, startedAt])
+  @@map("game_sessions")
+}
+
+model PlacementResult {
+  childId     String   @id @map("child_id") @db.Uuid
+  /// Per-section scores, e.g. { "alphabet": 80, "letter_sounds": 40, ... }.
+  scores      Json
+  startLessonId String? @map("start_lesson_id") @db.Uuid
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  child ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@map("placement_results")
+}
+
+// ───────────────────────────── Gamification ─────────────────────────────
+
+model Achievement {
+  id          String        @id @default(uuid()) @db.Uuid
+  slug        String        @unique
+  title       Json
+  description Json
+  icon        String
+  /// Rule evaluated by the game-engine, e.g. { "metric": "lessons_completed", "gte": 5 }.
+  rule        Json
+  xpReward    Int           @default(0) @map("xp_reward")
+  coinReward  Int           @default(0) @map("coin_reward")
+  status      PublishStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  unlocked UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  childId       String   @map("child_id") @db.Uuid
+  achievementId String   @map("achievement_id") @db.Uuid
+  unlockedAt    DateTime @default(now()) @map("unlocked_at")
+
+  child       ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  achievement Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([childId, achievementId])
+  @@map("user_achievements")
+}
+
+enum RewardCurrency {
+  XP
+  COINS
+  STARS
+  HEARTS
+}
+
+/// Append-only ledger; child_profiles.xp/coins are its running totals.
+model RewardLedger {
+  id        String         @id @default(uuid()) @db.Uuid
+  childId   String         @map("child_id") @db.Uuid
+  currency  RewardCurrency
+  amount    Int
+  reason    String
+  refType   String?        @map("ref_type")
+  refId     String?        @map("ref_id")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  child ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId, createdAt])
+  @@map("rewards")
+}
+
+model Streak {
+  childId        String    @id @map("child_id") @db.Uuid
+  current        Int       @default(0)
+  longest        Int       @default(0)
+  /// Calendar date (in the child's timezone) of the last day with a completed activity.
+  lastActiveDate DateTime? @map("last_active_date") @db.Date
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  child ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@map("streaks")
+}
+
+model DailyMission {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  title     Json
+  /// e.g. { "metric": "correct_answers", "target": 20 }
+  rule      Json
+  xpReward  Int      @default(50) @map("xp_reward")
+  coinReward Int     @default(10) @map("coin_reward")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  assigned ChildDailyMission[]
+
+  @@map("daily_missions")
+}
+
+model ChildDailyMission {
+  childId     String    @map("child_id") @db.Uuid
+  missionId   String    @map("mission_id") @db.Uuid
+  date        DateTime  @db.Date
+  progress    Int       @default(0)
+  target      Int
+  completedAt DateTime? @map("completed_at")
+
+  child   ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  mission DailyMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@id([childId, missionId, date])
+  @@index([childId, date])
+  @@map("child_daily_missions")
+}
+
+// ───────────────────────────── Business & operations ─────────────────────────────
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+model Subscription {
+  id               String             @id @default(uuid()) @db.Uuid
+  ownerId          String             @map("owner_id") @db.Uuid
+  plan             String
+  status           SubscriptionStatus
+  seats            Int                @default(1)
+  /// Payment provider name and reference, filled when a provider integration is configured.
+  provider         String?
+  providerRef      String?            @map("provider_ref")
+  currentPeriodEnd DateTime?          @map("current_period_end")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@map("subscriptions")
+}
+
+/// Privacy-friendly analytics: no IP address, no user agent, no free text from children.
+model AnalyticsEvent {
+  id        BigInt   @id @default(autoincrement())
+  name      String
+  userId    String?  @map("user_id") @db.Uuid
+  childId   String?  @map("child_id") @db.Uuid
+  props     Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([name, createdAt])
+  @@index([childId, createdAt])
+  @@map("analytics_events")
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  actorId   String?  @map("actor_id") @db.Uuid
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
