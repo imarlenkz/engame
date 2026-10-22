@@ -18,8 +18,8 @@ export async function createApp(opts: { logger?: boolean } = {}) {
   const env = app.get<Env>(ENV);
   if (opts.logger !== false) app.useLogger(app.get(Logger));
 
-  // nginx terminates TLS on the host and forwards one hop.
-  app.set('trust proxy', 1);
+  // Only the configured number of proxy hops is trusted when reading the client IP from X-Forwarded-For.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
   app.use(
     helmet({

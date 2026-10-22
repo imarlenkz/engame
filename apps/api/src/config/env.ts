@@ -13,6 +13,11 @@ const schema = z
     /** 32+ random bytes; signs lesson run tokens, CSRF tokens and the OIDC state cookie. */
     APP_SECRET: z.string().min(32),
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+    /**
+     * Reverse proxies in front of the API that append to X-Forwarded-For. Production: host nginx + the
+     * compose gateway = 2. Getting this wrong makes every visitor share one rate-limit bucket.
+     */
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     TIMEZONE: z.string().default('Asia/Almaty'),
 

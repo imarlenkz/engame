@@ -125,7 +125,9 @@ export default function ParentHome() {
     setSelectError(null);
     try {
       await api(`/children/${id}/select`, { method: 'POST' });
-      await qc.invalidateQueries();
+      // Selecting a child locks the parent area, so drop parent data instead of refetching it.
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
+      await qc.invalidateQueries({ queryKey: ['me'] });
       router.push('/play');
     } catch (err) {
       setSelectError(err);
