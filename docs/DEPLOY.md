@@ -30,7 +30,7 @@ nano .env
 |---|---|
 | Client ID | `engame` |
 | Redirect URI | `https://engame.imarlen.kz/api/v1/auth/idp/callback` |
-| Post-logout redirect | `https://engame.imarlen.kz/login` |
+| Post-logout redirect | `https://engame.imarlen.kz/` |
 | Scopes | `openid profile email` |
 
 Берілген client secret-ті `.env` → `OIDC_CLIENT_SECRET`-ке жазыңыз. Үш OIDC айнымалысының бәрі бос болса,
