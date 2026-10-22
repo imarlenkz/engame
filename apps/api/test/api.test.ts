@@ -159,7 +159,7 @@ describe('lesson flow', () => {
         runToken: run.run.token,
         itemId: item.id,
         clientId: randomUUID(),
-        answer: correctAnswer(run.keys[item.id]!),
+        answer: correctAnswer(run.keys[item.id]!, item.view),
         responseMs: 1500,
       });
       expect(res.status).toBe(200);
@@ -208,7 +208,7 @@ describe('lesson flow', () => {
       runToken: run.run.token,
       itemId: choice.id,
       clientId: randomUUID(),
-      answer: correctAnswer(run.keys[choice.id]!),
+      answer: correctAnswer(run.keys[choice.id]!, choice.view),
     });
     expect(retry.body.correct).toBe(true);
     expect(retry.body.firstAttempt).toBe(false);
@@ -261,7 +261,7 @@ describe('offline sync', () => {
           answers: items(run).map((item, i) => ({
             itemId: item.id,
             clientId: `${run.run.id}:${i}`,
-            answer: correctAnswer(run.keys[item.id]!),
+            answer: correctAnswer(run.keys[item.id]!, item.view),
             responseMs: 1200,
             answeredAt: new Date(t0 + i * 1000).toISOString(),
           })),

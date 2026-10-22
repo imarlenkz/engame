@@ -98,15 +98,24 @@ type Key =
   | { kind: 'order'; sequence: string[] }
   | { kind: 'match'; pairs: [string, string][] };
 
-/** The correct answer for an answer key (the offline payload includes keys). */
-export function correctAnswer(key: Key) {
+type View = { kind: string; tiles?: { id: string; label: string }[] };
+
+/** The correct answer for an answer key (the offline payload includes keys). Order keys hold labels; answers send tile ids. */
+export function correctAnswer(key: Key, view?: View) {
   switch (key.kind) {
     case 'none':
       return { kind: 'ack' as const };
     case 'choice':
       return { kind: 'choice' as const, optionId: key.optionId };
-    case 'order':
-      return { kind: 'order' as const, sequence: key.sequence };
+    case 'order': {
+      const free = [...(view?.tiles ?? [])];
+      const sequence = key.sequence.map((label) => {
+        const i = free.findIndex((t) => t.label === label);
+        if (i < 0) throw new Error(`No tile for ${label}`);
+        return free.splice(i, 1)[0]!.id;
+      });
+      return { kind: 'order' as const, sequence };
+    }
     case 'match':
       return { kind: 'match' as const, pairs: key.pairs, moves: key.pairs.length };
   }
@@ -114,7 +123,7 @@ export function correctAnswer(key: Key) {
 
 export interface StartedRun {
   run: { id: string; token: string };
-  steps: { items: { id: string }[] }[];
+  steps: { items: { id: string; view: View }[] }[];
   keys: Record<string, Key>;
 }
 

@@ -191,6 +191,16 @@ export class TeacherService {
     };
   }
 
+  /** Published lessons in curriculum order, for the assignment picker. */
+  async catalog() {
+    const lessons = await this.prisma.lesson.findMany({
+      where: { status: 'PUBLISHED', level: { status: 'PUBLISHED', world: { status: 'PUBLISHED' } } },
+      orderBy: [{ level: { world: { order: 'asc' } } }, { level: { order: 'asc' } }, { order: 'asc' }],
+      select: { id: true, slug: true, title: true, kind: true, level: { select: { world: { select: { slug: true, title: true, icon: true } } } } },
+    });
+    return lessons.map(({ level, ...l }) => ({ ...l, world: level.world }));
+  }
+
   async removeMember(teacherId: string, classId: string, childId: string) {
     await this.ownClass(teacherId, classId);
     await this.prisma.classMember.deleteMany({ where: { classId, childId } });
@@ -364,6 +374,12 @@ export class AssignmentsController {
     private readonly teacher: TeacherService,
     private readonly children: ChildrenService,
   ) {}
+
+  @Roles('TEACHER', 'ADMIN')
+  @Get('teacher/lessons')
+  lessons() {
+    return this.teacher.catalog();
+  }
 
   @UseGuards(ChildGuard)
   @Get('assignments')
