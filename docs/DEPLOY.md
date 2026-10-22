@@ -24,7 +24,13 @@ nano .env
 
 ## 3. iMARLEN ID
 
-`id.imarlen.kz` админ панелінде OIDC клиентін тіркеңіз:
+iMARLEN ID серверінде (imarlenkz/imarlen-id) OIDC клиентін тіркеңіз:
+
+```bash
+node src/cli.mjs client engame EnGame https://engame.imarlen.kz/api/v1/auth/idp/callback https://engame.imarlen.kz/
+```
+
+Secret бір рет қана көрсетіледі. Параметрлер:
 
 | Өріс | Мән |
 |---|---|
