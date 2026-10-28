@@ -419,6 +419,7 @@ export const ru: Record<MessageKey, string> = {
   'admin.emoji': 'Эмодзи',
   'admin.difficulty': 'Сложность',
   'admin.mouth': 'Положение рта',
+  'admin.mouthAuto': 'Рисуется автоматически по IPA. Если загрузить картинку ниже, детям покажется она.',
   'admin.graphemes': 'Написания (через запятую, первое — основное)',
   'admin.plan': 'Тариф',
   'admin.seats': 'Мест',

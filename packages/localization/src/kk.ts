@@ -419,6 +419,7 @@ export const kk: Record<MessageKey, string> = {
   'admin.emoji': 'Эмодзи',
   'admin.difficulty': 'Қиындығы',
   'admin.mouth': 'Ауыз қалпы',
+  'admin.mouthAuto': 'IPA бойынша автоматты сызылады. Төменде сурет жүктесеңіз, балаларға сол сурет көрсетіледі.',
   'admin.graphemes': 'Жазылуы (үтірмен, біріншісі — негізгі)',
   'admin.plan': 'Тариф',
   'admin.seats': 'Орын саны',

@@ -33,6 +33,8 @@ docker compose run --rm migrate
 
 echo "==> Starting application"
 docker compose up -d --remove-orphans api web gateway
+# The gateway (nginx) resolves api/web once at start-up; restart it so it picks up the new containers.
+docker compose restart gateway
 
 echo "==> Waiting for readiness"
 for i in $(seq 1 60); do

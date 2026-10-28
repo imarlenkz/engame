@@ -418,6 +418,7 @@ export const en = {
   'admin.emoji': 'Emoji',
   'admin.difficulty': 'Difficulty',
   'admin.mouth': 'Mouth position',
+  'admin.mouthAuto': 'Drawn automatically from the IPA. An uploaded mouth picture replaces it for children.',
   'admin.graphemes': 'Spellings (comma separated, first is main)',
   'admin.plan': 'Plan',
   'admin.seats': 'Seats',

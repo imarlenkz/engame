@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LTextFields, MediaPicker, StatusChip, StatusSelect, type Status } from '@/components/admin/admin-kit';
+import { MouthShape } from '@/components/mouth';
 import { ErrorBox, Field, Modal, PageTitle, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -16,11 +17,13 @@ interface Phoneme {
   category: string;
   difficulty: number;
   mouthPosition: LocalizedText;
+  tip: LocalizedText | null;
   audioId: string | null;
   mouthImageId: string | null;
   status: Status;
   graphemes: { grapheme: string; isPrimary: boolean }[];
   audio: { storageKey: string } | null;
+  mouthImage: { storageKey: string } | null;
   _count: { wordPhonemes: number };
 }
 
@@ -30,6 +33,7 @@ function EditPhoneme({ p, onDone }: { p: Phoneme; onDone(): void }) {
   const [f, setF] = useState({
     symbol: p.symbol,
     mouthPosition: p.mouthPosition,
+    tip: p.tip ?? { en: '', kk: '', ru: '' },
     difficulty: p.difficulty,
     audioId: p.audioId,
     mouthImageId: p.mouthImageId,
@@ -42,6 +46,8 @@ function EditPhoneme({ p, onDone }: { p: Phoneme; onDone(): void }) {
         method: 'PATCH',
         body: {
           ...f,
+          // An empty tip is stored as «no tip».
+          tip: Object.values(f.tip ?? {}).some((v) => String(v ?? '').trim()) ? f.tip : null,
           graphemes: f.graphemes
             .split(',')
             .map((g) => g.trim())
@@ -67,9 +73,24 @@ function EditPhoneme({ p, onDone }: { p: Phoneme; onDone(): void }) {
       <Field label={t('admin.graphemes')}>
         <input className="input font-mono" value={f.graphemes} onChange={(e) => setF({ ...f, graphemes: e.target.value })} />
       </Field>
-      <div>
-        <span className="label">{t('admin.mouth')}</span>
-        <LTextFields value={f.mouthPosition} onChange={(mouthPosition) => setF({ ...f, mouthPosition })} />
+      <div className="grid gap-4 md:grid-cols-[220px_1fr]">
+        <div>
+          <span className="label">{t('admin.mouth')}</span>
+          <div className="flex h-36 items-center justify-center rounded-2xl bg-slate-900 p-3">
+            <MouthShape ipa={p.ipa} className="h-28 w-full" />
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{t('admin.mouthAuto')}</p>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <span className="label">{t('admin.mouth')}</span>
+            <LTextFields value={f.mouthPosition} onChange={(mouthPosition) => setF({ ...f, mouthPosition })} />
+          </div>
+          <div>
+            <span className="label">{t('sounds.tip')}</span>
+            <LTextFields required={false} value={f.tip as LocalizedText} onChange={(tip) => setF({ ...f, tip })} />
+          </div>
+        </div>
       </div>
       <Field label={t('admin.audio')}>
         <MediaPicker kind="audio" value={f.audioId} onChange={(audioId) => setF({ ...f, audioId })} />
@@ -103,6 +124,7 @@ export default function PhonemesAdmin() {
             <tr>
               <th>Symbol</th>
               <th>IPA</th>
+              <th>{t('admin.mouth')}</th>
               <th>{t('admin.kind')}</th>
               <th>{t('admin.graphemes').split('(')[0]}</th>
               <th>{t('admin.audio')}</th>
@@ -116,6 +138,12 @@ export default function PhonemesAdmin() {
               <tr key={p.id}>
                 <td className="text-lg font-black">{p.symbol}</td>
                 <td className="font-mono">/{p.ipa}/</td>
+                <td>
+                  <span className="flex h-12 w-28 items-center justify-center rounded-xl bg-slate-900" title={p.mouthPosition?.kk ?? p.mouthPosition?.en ?? ''}>
+                    <MouthShape ipa={p.ipa} className="h-10 w-full" />
+                  </span>
+                  {p.mouthImage && <span className="chip mt-1">🖼️</span>}
+                </td>
                 <td className="text-xs">{p.category}</td>
                 <td className="font-mono text-xs">{p.graphemes.map((g) => g.grapheme).join(', ')}</td>
                 <td>{p.audio ? '✅' : <span className="chip bg-amber-100 text-amber-800">—</span>}</td>
