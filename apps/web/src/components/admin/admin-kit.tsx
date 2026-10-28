@@ -9,9 +9,61 @@ import { ErrorBox, Field } from '../ui';
 
 export type Status = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
-/** Metrics the achievement and mission rules can use (mirrors @engame/game-engine METRICS). */
-export const METRICS_HINT =
-  'lessons_completed · perfect_lessons · streak_days · xp_total · sounds_mastered · words_mastered · letters_mastered · games_played · correct_answers · level_reached';
+type L3 = { kk: string; ru: string; en: string };
+
+/** Metrics the achievement and mission rules can use (mirrors @engame/game-engine METRICS), in plain words. */
+export const METRICS: Record<string, { icon: string; label: L3; unit: L3 }> = {
+  lessons_completed: { icon: '📘', label: { kk: 'Аяқталған сабақтар', ru: 'Пройденные уроки', en: 'Lessons completed' }, unit: { kk: 'сабақ', ru: 'уроков', en: 'lessons' } },
+  perfect_lessons: { icon: '💯', label: { kk: 'Қатесіз сабақтар', ru: 'Уроки без ошибок', en: 'Perfect lessons' }, unit: { kk: 'сабақ', ru: 'уроков', en: 'lessons' } },
+  streak_days: { icon: '🔥', label: { kk: 'Қатарынан күндер', ru: 'Дней подряд', en: 'Days in a row' }, unit: { kk: 'күн', ru: 'дней', en: 'days' } },
+  xp_total: { icon: '⭐', label: { kk: 'Жиналған XP', ru: 'Набрано XP', en: 'XP earned' }, unit: { kk: 'XP', ru: 'XP', en: 'XP' } },
+  sounds_mastered: { icon: '🔊', label: { kk: 'Меңгерілген дыбыстар', ru: 'Освоенные звуки', en: 'Sounds mastered' }, unit: { kk: 'дыбыс', ru: 'звуков', en: 'sounds' } },
+  words_mastered: { icon: '🧩', label: { kk: 'Меңгерілген сөздер', ru: 'Освоенные слова', en: 'Words mastered' }, unit: { kk: 'сөз', ru: 'слов', en: 'words' } },
+  letters_mastered: { icon: '🔤', label: { kk: 'Меңгерілген әріптер', ru: 'Освоенные буквы', en: 'Letters mastered' }, unit: { kk: 'әріп', ru: 'букв', en: 'letters' } },
+  games_played: { icon: '🎮', label: { kk: 'Ойнаған ойындар', ru: 'Сыгранные игры', en: 'Games played' }, unit: { kk: 'ойын', ru: 'игр', en: 'games' } },
+  correct_answers: { icon: '✅', label: { kk: 'Дұрыс жауаптар', ru: 'Правильные ответы', en: 'Correct answers' }, unit: { kk: 'жауап', ru: 'ответов', en: 'answers' } },
+  level_reached: { icon: '🚀', label: { kk: 'Жеткен деңгей', ru: 'Достигнутый уровень', en: 'Level reached' }, unit: { kk: 'деңгей', ru: 'уровень', en: 'level' } },
+};
+
+/** «📘 Аяқталған сабақтар: 10 сабақ» — a rule in plain words. */
+export function useMetricText() {
+  const { locale } = useI18n();
+  return (metric: string, n: number) => {
+    const m = METRICS[metric];
+    return m ? `${m.icon} ${m.label[locale]}: ${n} ${m.unit[locale]}` : `${metric}: ${n}`;
+  };
+}
+
+/** Metric dropdown + number, instead of a JSON rule. */
+export function MetricRuleFields({
+  metric,
+  value,
+  onChange,
+  numberLabel,
+}: {
+  metric: string;
+  value: number;
+  onChange(metric: string, value: number): void;
+  numberLabel: string;
+}) {
+  const { locale, t } = useI18n();
+  return (
+    <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+      <Field label={t('admin.ruleWhat')}>
+        <select className="input" value={metric} onChange={(e) => onChange(e.target.value, value)}>
+          {Object.entries(METRICS).map(([key, m]) => (
+            <option key={key} value={key}>
+              {m.icon} {m.label[locale]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label={numberLabel}>
+        <input className="input" type="number" min={1} value={value} onChange={(e) => onChange(metric, Number(e.target.value))} required />
+      </Field>
+    </div>
+  );
+}
 
 export function StatusChip({ status }: { status: Status }) {
   const { t } = useI18n();
@@ -69,17 +121,29 @@ export function JsonEditor({ value, onChange, rows = 8, label }: { value: unknow
   );
 }
 
-export function LTextFields({ value, onChange, required = true }: { value: Partial<LocalizedText>; onChange(v: LocalizedText): void; required?: boolean }) {
+export function LTextFields({
+  value,
+  onChange,
+  required = true,
+  kind = 'title',
+}: {
+  value: Partial<LocalizedText>;
+  onChange(v: LocalizedText): void;
+  required?: boolean;
+  /** «title» → «Атауы (…)», «description» → «Сипаттамасы (…)». */
+  kind?: 'title' | 'description';
+}) {
   const { t } = useI18n();
+  const k = kind === 'description' ? 'admin.desc' : 'admin.title';
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <Field label={t('admin.titleEn')}>
+      <Field label={t(`${k}En`)}>
         <input className="input" value={value.en ?? ''} required={required} onChange={(e) => onChange({ ...value, en: e.target.value })} />
       </Field>
-      <Field label={t('admin.titleKk')}>
+      <Field label={t(`${k}Kk`)}>
         <input className="input" value={value.kk ?? ''} onChange={(e) => onChange({ ...value, kk: e.target.value })} />
       </Field>
-      <Field label={t('admin.titleRu')}>
+      <Field label={t(`${k}Ru`)}>
         <input className="input" value={value.ru ?? ''} onChange={(e) => onChange({ ...value, ru: e.target.value })} />
       </Field>
     </div>
