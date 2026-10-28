@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { playMedia } from '@/lib/audio';
 import { useI18n } from '@/lib/i18n';
 import type { Answer, AnswerKey, ItemView, Media } from '@/lib/types';
-import { ListenButton, MediaView } from '../media-view';
+import { MediaView } from '../media-view';
+import { MouthShape } from '../mouth';
 
 export interface Feedback {
   correct: boolean | null;
@@ -32,13 +33,20 @@ function useAutoplay(media: Media | undefined, key: string) {
 
 export function PresentView({ view }: { view: ViewOf<'present'> }) {
   useAutoplay(view.focus, JSON.stringify(view.focus));
+  // «Watch the mouth» steps get a drawn mouth when the CMS has no picture for the sound.
+  const drawMouth = view.instruction === 'exercise.watchMouth.instruction' && !view.focus.imageUrl && view.focus.ipa;
   return (
     <div className="flex flex-col items-center gap-6">
+      {drawMouth ? (
+        <div className="w-full max-w-sm rounded-[30px] bg-white/[0.05] p-5 ring-1 ring-white/[0.14]">
+          <MouthShape ipa={view.focus.ipa!} className="h-36 w-full" />
+        </div>
+      ) : null}
       <MediaView media={view.focus} size="xl" />
       {view.details && view.details.length > 0 && (
         <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
           {view.details.map((d, i) => (
-            <div key={i} className="card flex items-center justify-center p-3">
+            <div key={i} className="card flex items-center justify-center p-4 transition hover:bg-white/[0.12]">
               <MediaView media={d} size="sm" />
             </div>
           ))}
@@ -54,20 +62,26 @@ export function ChoiceView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<
   useEffect(() => setPicked(null), [view]);
   const expected = feedback?.expected?.kind === 'choice' ? feedback.expected.optionId : null;
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex w-full flex-col items-center gap-8">
       <MediaView media={view.prompt} size="xl" />
-      <div className={`grid w-full gap-3 ${view.options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`} role="radiogroup">
+      <div className={`grid w-full max-w-2xl gap-3 sm:gap-6 ${view.options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`} role="radiogroup">
         {view.options.map((o) => {
           const isPicked = picked === o.id;
           const state =
-            feedback && isPicked ? (feedback.correct ? 'ring-4 ring-leaf-500 bg-green-50' : 'ring-4 ring-berry-500 bg-rose-50 animate-shake') : feedback && expected === o.id ? 'ring-4 ring-leaf-500' : '';
+            feedback && isPicked
+              ? feedback.correct
+                ? 'bg-mint ring-mint shadow-glow shadow-mint/60 [&_*]:!text-night'
+                : 'bg-coral ring-coral shadow-glow shadow-coral/60 animate-shake [&_*]:!text-night'
+              : feedback && expected === o.id
+                ? 'ring-4 ring-mint shadow-glow-sm shadow-mint/50'
+                : '';
           return (
             <button
               key={o.id}
               role="radio"
               aria-checked={isPicked}
               disabled={busy || feedback != null}
-              className={`card flex min-h-28 items-center justify-center p-3 transition hover:-translate-y-0.5 disabled:cursor-default ${state}`}
+              className={`card flex min-h-32 items-center justify-center rounded-[32px] p-4 sm:min-h-48 transition hover:scale-[1.03] hover:bg-white/[0.12] disabled:cursor-default disabled:hover:scale-100 ${state}`}
               onClick={() => {
                 setPicked(o.id);
                 void playMedia(o.media);
@@ -102,9 +116,9 @@ export function OrderView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<'
               key={i}
               disabled={done || !tile}
               onClick={() => setPlaced(placed.filter((_, j) => j !== i))}
-              className={`flex h-16 min-w-14 items-center justify-center rounded-2xl border-4 border-dashed px-3 text-3xl font-black ${
-                tile ? 'border-transparent bg-brand-500 text-white shadow-pop' : 'border-slate-300 bg-white/60'
-              } ${done ? (feedback?.correct ? 'bg-leaf-500' : 'bg-berry-500') : ''}`}
+              className={`flex h-16 min-w-16 items-center justify-center rounded-full border-2 border-dashed px-4 text-3xl font-black ${
+                tile ? 'border-transparent bg-star text-night shadow-glow-sm shadow-star' : 'border-white/35'
+              } ${done ? (feedback?.correct ? '!bg-mint shadow-mint' : '!bg-coral shadow-coral') : ''}`}
             >
               {tile?.label ?? ''}
             </button>
@@ -112,7 +126,7 @@ export function OrderView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<'
         })}
       </div>
       {expected && (
-        <p className="text-lg font-bold text-leaf-600" lang="en">
+        <p className="text-lg font-black text-mint" lang="en">
           ✓ {expected.join(' · ')}
         </p>
       )}
@@ -127,7 +141,7 @@ export function OrderView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<'
                 setPlaced([...placed, tile.id]);
                 if (tile.audioUrl) void playMedia({ audioUrl: tile.audioUrl });
               }}
-              className={`h-16 min-w-14 rounded-2xl bg-white px-3 text-3xl font-black shadow-pop ring-1 ring-slate-200 transition ${used ? 'opacity-20' : 'hover:-translate-y-0.5'}`}
+              className={`h-16 min-w-16 rounded-full bg-white/[0.08] px-4 text-3xl font-black ring-1 ring-white/20 transition ${used ? 'opacity-20' : 'hover:scale-105 hover:bg-white/[0.16]'}`}
             >
               {tile.label}
             </button>
@@ -189,7 +203,7 @@ export function MatchView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<'
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-sm font-semibold text-slate-500">{t('lesson.moves', { n: moves })}</p>
+      <p className="text-sm font-extrabold text-slate-500">{t('lesson.moves', { n: moves })}</p>
       <div className="grid w-full max-w-xl grid-cols-3 gap-3 sm:grid-cols-4">
         {view.cards.map((c) => {
           const faceUp = open.includes(c.id) || matched.has(c.id);
@@ -198,11 +212,15 @@ export function MatchView({ view, feedback, busy, onAnswer }: ViewProps<ViewOf<'
               key={c.id}
               onClick={() => flip(c.id)}
               aria-label={faceUp ? (c.media.text ?? c.media.speak ?? '') : '?'}
-              className={`flex aspect-square items-center justify-center rounded-2xl text-3xl font-black shadow-pop transition ${
-                faceUp ? (matched.has(c.id) ? 'bg-green-100 ring-2 ring-leaf-500' : 'bg-white') : 'bg-brand-500 text-white'
+              className={`flex aspect-square items-center justify-center rounded-[24px] text-3xl font-black transition ${
+                faceUp
+                  ? matched.has(c.id)
+                    ? 'bg-mint shadow-glow-sm shadow-mint/60 [&_*]:!text-night'
+                    : 'bg-lilac shadow-glow-sm shadow-lilac/60 [&_*]:!text-night'
+                  : 'bg-white/[0.07] text-star ring-1 ring-white/[0.16] hover:bg-white/[0.12]'
               }`}
             >
-              {faceUp ? <MediaView media={c.media} size="sm" listen={false} /> : '?'}
+              {faceUp ? <MediaView media={c.media} size="sm" listen={false} /> : '★'}
             </button>
           );
         })}
@@ -216,7 +234,6 @@ export function SpeakView({ view }: { view: ViewOf<'speak'> }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <MediaView media={view.prompt} size="xl" />
-      <ListenButton media={view.prompt} />
     </div>
   );
 }

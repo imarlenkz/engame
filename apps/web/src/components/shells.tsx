@@ -30,16 +30,21 @@ function NavLink({ href, children, exact = false }: { href: string; children: Re
   const path = usePathname();
   const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-2 font-semibold ${active ? 'bg-brand-100 text-brand-800' : 'text-slate-600 hover:bg-slate-100'}`}>
+    <Link href={href} aria-current={active ? 'page' : undefined} className={`whitespace-nowrap rounded-full px-3.5 py-2 font-extrabold transition ${active ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>
       {children}
     </Link>
   );
 }
 
-export function Logo() {
+/** Glowing «En» star + wordmark. */
+export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {
+  const lg = size === 'lg';
   return (
-    <Link href="/" className="flex items-center gap-2 text-xl font-black text-brand-600">
-      <span aria-hidden>🔤</span> EnGame
+    <Link href="/" className="flex items-center gap-2.5 font-black text-slate-900">
+      <span aria-hidden className={`orb-star ${lg ? 'h-9 w-9 text-sm' : 'h-8 w-8 text-xs'}`}>
+        En
+      </span>
+      <span className={lg ? 'text-[23px]' : 'text-xl'}>EnGame</span>
     </Link>
   );
 }
@@ -59,11 +64,11 @@ export function ChildShell({ me, children }: { me: Me; children: ReactNode }) {
   ];
   const path = usePathname();
   return (
-    <div className="min-h-dvh pb-24 sm:pb-0">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2">
+    <div className="sky min-h-dvh bg-fixed pb-24 lg:pb-0">
+      <header className="sticky top-0 z-20 border-b border-white/[0.08] bg-night/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
           <Logo />
-          <nav className="hidden gap-1 sm:flex" aria-label="main">
+          <nav className="hidden gap-1 lg:flex" aria-label="main">
             {tabs.map((tab) => (
               <NavLink key={tab.href} href={tab.href} exact={tab.exact}>
                 <span aria-hidden>{tab.icon}</span> {tab.label}
@@ -84,13 +89,13 @@ export function ChildShell({ me, children }: { me: Me; children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-5">{children}</main>
-      <nav aria-label="tabs" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white sm:hidden">
+      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <nav aria-label="tabs" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-white/[0.08] bg-night/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
         {tabs.map((tab) => {
           const active = tab.exact ? path === tab.href : path.startsWith(tab.href);
           return (
-            <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined} className={`flex flex-col items-center py-2 text-xs font-bold ${active ? 'text-brand-600' : 'text-slate-500'}`}>
-              <span className="text-2xl" aria-hidden>
+            <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-xs font-extrabold ${active ? 'text-star' : 'text-slate-500'}`}>
+              <span className={`text-2xl transition ${active ? 'drop-shadow-[0_0_10px_rgb(247_204_75/0.7)]' : 'opacity-80'}`} aria-hidden>
                 {tab.icon}
               </span>
               {tab.label}
@@ -111,12 +116,25 @@ export function ChildShell({ me, children }: { me: Me; children: ReactNode }) {
   );
 }
 
-export function AdultShell({ me, nav, children, wide = false }: { me: Me; nav: { href: string; label: string; exact?: boolean }[]; children: ReactNode; wide?: boolean }) {
+export function AdultShell({
+  me,
+  nav,
+  children,
+  wide = false,
+  day = false,
+}: {
+  me: Me;
+  nav: { href: string; label: string; exact?: boolean }[];
+  children: ReactNode;
+  wide?: boolean;
+  /** Light admin palette instead of the night sky. */
+  day?: boolean;
+}) {
   const { t } = useI18n();
   const signOut = useSignOut();
   return (
-    <div className="min-h-dvh bg-slate-50">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+    <div className={`min-h-dvh ${day ? 'theme-day' : 'bg-[#0f0d2a]'}`}>
+      <header className={`sticky top-0 z-20 border-b ${day ? 'border-slate-200 bg-white' : 'border-white/[0.08] bg-night/80 backdrop-blur-md'}`}>
         <div className={`mx-auto flex ${wide ? 'max-w-7xl' : 'max-w-5xl'} flex-wrap items-center justify-between gap-3 px-4 py-2`}>
           <div className="flex items-center gap-4">
             <Logo />

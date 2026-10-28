@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Suspense, useState, type FormEvent } from 'react';
-import { Logo } from '@/components/shells';
-import { ErrorBox, Field, LocaleSwitcher, Spinner } from '@/components/ui';
+import { ErrorBox, Field, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { Me } from '@/lib/types';
-import { ImarlenButton, safeNext, useAuthOptions } from '@/components/auth';
+import { AuthScreen, ImarlenButton, OrDivider, safeNext, useAuthOptions } from '@/components/auth';
 
 function RegisterForm() {
   const { t, locale } = useI18n();
@@ -37,8 +36,8 @@ function RegisterForm() {
 
   if (options && !options.localRegistration) {
     return (
-      <div className="card w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-extrabold">{t('auth.signUp')}</h1>
+      <div className="w-full space-y-4">
+        <h2 className="text-[26px] font-black">{t('auth.signUp')}</h2>
         <p className="text-slate-600">{t('auth.registrationClosed')}</p>
         {options.idp && <ImarlenButton next={next} />}
       </div>
@@ -46,16 +45,12 @@ function RegisterForm() {
   }
 
   return (
-    <div className="card w-full max-w-md">
-      <h1 className="mb-6 text-2xl font-extrabold">{t('auth.signUp')}</h1>
+    <div className="w-full">
+      <h2 className="mb-6 text-[26px] font-black">{t('auth.signUp')}</h2>
       {options?.idp && (
         <>
           <ImarlenButton next={next} />
-          <div className="my-5 flex items-center gap-3 text-sm text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            {t('auth.or')}
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
+          <OrDivider />
         </>
       )}
       <form onSubmit={submit} className="space-y-4">
@@ -68,24 +63,28 @@ function RegisterForm() {
         <Field label={t('auth.password')} hint={t('auth.passwordHint')}>
           <input className="input" type="password" autoComplete="new-password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
         </Field>
-        <label className="flex items-start gap-3 text-sm text-slate-700">
-          <input type="checkbox" className="mt-1 h-5 w-5" checked={form.acceptTerms} onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })} required />
+        <label className="flex items-start gap-3 text-sm font-bold text-slate-600">
+          <input type="checkbox" className="mt-0.5 h-5 w-5 accent-star" checked={form.acceptTerms} onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })} required />
           <span>
             {t('auth.acceptTerms')} (
-            <Link href="/privacy" className="underline" target="_blank">
-              Privacy
+            <Link href="/terms" className="text-lilac underline" target="_blank">
+              {t('landing.termsLink')}
+            </Link>
+            ,{' '}
+            <Link href="/privacy" className="text-lilac underline" target="_blank">
+              {t('landing.privacyLink')}
             </Link>
             )
           </span>
         </label>
         {error ? <ErrorBox error={error} /> : null}
-        <button className="btn-primary w-full" disabled={busy || !form.acceptTerms}>
+        <button className="btn-primary w-full py-4 text-lg" disabled={busy || !form.acceptTerms}>
           {t('auth.signUp')}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-600">
+      <p className="mt-6 text-[15px] font-bold text-slate-500">
         {t('auth.haveAccount')}{' '}
-        <Link href="/login" className="font-bold text-brand-600 underline">
+        <Link href="/login" className="font-black text-lilac hover:text-white">
           {t('auth.signIn')}
         </Link>
       </p>
@@ -94,15 +93,12 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+  const { t } = useI18n();
   return (
-    <div className="flex min-h-dvh flex-col items-center bg-sky-50 px-4 pb-10">
-      <header className="flex w-full max-w-md items-center justify-between py-6">
-        <Logo />
-        <LocaleSwitcher />
-      </header>
+    <AuthScreen title={t('auth.joinTitle')} subtitle={t('auth.joinSub')}>
       <Suspense fallback={<Spinner />}>
         <RegisterForm />
       </Suspense>
-    </div>
+    </AuthScreen>
   );
 }

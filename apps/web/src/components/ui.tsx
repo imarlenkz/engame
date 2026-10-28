@@ -8,8 +8,8 @@ import { useI18n } from '@/lib/i18n';
 export function Spinner({ label }: { label?: string }) {
   const { t } = useI18n();
   return (
-    <div role="status" className="flex items-center justify-center gap-3 p-8 text-slate-500">
-      <span className="h-6 w-6 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500" aria-hidden />
+    <div role="status" className="flex items-center justify-center gap-3 p-8 font-bold text-slate-500">
+      <span className="h-6 w-6 animate-spin rounded-full border-4 border-slate-200 border-t-sun-400" aria-hidden />
       <span>{label ?? t('common.loading')}</span>
     </div>
   );
@@ -19,7 +19,7 @@ export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => v
   const { t, error: msg } = useI18n();
   const details = isApiError(error) && Array.isArray(error.details) ? (error.details as { where?: string; path?: string; message: string }[]) : null;
   return (
-    <div role="alert" className="rounded-2xl bg-berry-400/10 p-4 text-berry-600 ring-1 ring-berry-400/40">
+    <div role="alert" className="rounded-2xl bg-berry-400/10 p-4 font-bold text-berry-600 ring-1 ring-berry-400/40">
       <p className="font-semibold">{msg(error)}</p>
       {details && (
         <ul className="mt-2 list-disc pl-5 text-sm">
@@ -42,13 +42,13 @@ export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => v
 
 export function Empty({ children }: { children?: ReactNode }) {
   const { t } = useI18n();
-  return <p className="rounded-2xl bg-white/60 p-6 text-center text-slate-500">{children ?? t('common.empty')}</p>;
+  return <p className="rounded-[26px] bg-slate-50 p-6 text-center font-bold text-slate-500 ring-1 ring-slate-200">{children ?? t('common.empty')}</p>;
 }
 
 export function PageTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{children}</h1>
+      <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">{children}</h1>
       {action}
     </div>
   );
@@ -65,23 +65,27 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
   );
 }
 
+const LOCALE_SHORT: Record<Locale, string> = { kk: 'ҚАЗ', ru: 'РУС', en: 'ENG' };
+
+/** Segmented ҚАЗ / РУС / ENG pill from the Night-sky design. */
 export function LocaleSwitcher({ persist = false }: { persist?: boolean }) {
   const { locale, setLocale, t } = useI18n();
   return (
-    <label className="inline-flex items-center gap-2 text-sm">
-      <span className="sr-only">{t('common.language')}</span>
-      <select
-        className="rounded-xl border border-slate-300 bg-white px-2 py-1.5 text-sm font-semibold"
-        value={locale}
-        onChange={(e) => setLocale(e.target.value as Locale, { persist })}
-      >
-        {LOCALES.map((l) => (
-          <option key={l} value={l}>
-            {LOCALE_NAMES[l]}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div role="radiogroup" aria-label={t('common.language')} className="inline-flex gap-0.5 rounded-full bg-slate-100 p-1">
+      {LOCALES.map((l) => (
+        <button
+          key={l}
+          type="button"
+          role="radio"
+          aria-checked={locale === l}
+          title={LOCALE_NAMES[l]}
+          onClick={() => setLocale(l, { persist })}
+          className={`rounded-full px-2.5 py-1 text-xs font-extrabold transition sm:px-3 sm:text-[13px] ${locale === l ? 'bg-white text-night' : 'text-slate-500 hover:text-slate-900'}`}
+        >
+          {LOCALE_SHORT[l]}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -94,10 +98,10 @@ export function Modal({ open, onClose, title, children, wide = false }: { open: 
     if (!open && d.open) d.close();
   }, [open]);
   return (
-    <dialog ref={ref} onClose={onClose} className={`${wide ? 'w-[min(96vw,64rem)]' : 'w-[min(92vw,32rem)]'} max-h-[90dvh] rounded-3xl p-0 shadow-2xl backdrop:bg-slate-900/40`}>
+    <dialog ref={ref} onClose={onClose} className={`${wide ? 'w-[min(96vw,64rem)]' : 'w-[min(92vw,32rem)]'} max-h-[90dvh] rounded-3xl p-0 shadow-2xl text-slate-800 ring-1 ring-white/10 backdrop:bg-night/70 backdrop:backdrop-blur-sm`}>
       <div className="p-6">
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 className="text-xl font-extrabold">{title}</h2>
+          <h2 className="text-2xl font-black">{title}</h2>
           <button aria-label="×" className="rounded-full px-2 text-2xl leading-none text-slate-400 hover:text-slate-700" onClick={onClose}>
             ×
           </button>
@@ -110,22 +114,22 @@ export function Modal({ open, onClose, title, children, wide = false }: { open: 
 
 export function Stat({ icon, label, value }: { icon: string; label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200/70">
+    <div className="flex items-center gap-3 rounded-[20px] bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
       <span className="text-2xl" aria-hidden>
         {icon}
       </span>
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-        <div className="text-xl font-extrabold text-slate-900">{value}</div>
+        <div className="text-xs font-extrabold uppercase tracking-wide text-slate-500">{label}</div>
+        <div className="text-2xl font-black text-slate-900">{value}</div>
       </div>
     </div>
   );
 }
 
-export function ProgressBar({ value, max, label, color = 'bg-leaf-500' }: { value: number; max: number; label?: string; color?: string }) {
+export function ProgressBar({ value, max, label, color = 'bg-sun-400' }: { value: number; max: number; label?: string; color?: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return (
-    <div role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label={label} className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+    <div role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label={label} className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
       <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -135,7 +139,7 @@ export function Stars({ n, of = 3 }: { n: number; of?: number }) {
   return (
     <span aria-label={`${n}/${of}`} className="tracking-tight">
       {Array.from({ length: of }, (_, i) => (
-        <span key={i} className={i < n ? 'text-sun-500' : 'text-slate-300'} aria-hidden>
+        <span key={i} className={i < n ? 'text-sun-400 drop-shadow-[0_0_8px_rgb(247_204_75/0.8)]' : 'text-slate-300'} aria-hidden>
           ★
         </span>
       ))}

@@ -182,6 +182,11 @@ const phonicsCastle: WorldSeed = {
         blendLesson('blend-th-ng', { en: 'th and ng words', kk: 'th және ng сөздері', ru: 'Слова с th и ng' }, digraphWords(['th-unvoiced', 'th-voiced', 'ng'])),
         blendLesson('blend-long-vowels', { en: 'Long vowel words', kk: 'Созылыңқы дауысты сөздер', ru: 'Слова с долгими гласными' }, digraphWords(['ee', 'ai', 'oa', 'ie', 'oo-long'])),
         blendLesson('blend-ar-or-er', { en: 'ar, or and er words', kk: 'ar, or және er сөздері', ru: 'Слова с ar, or, er' }, digraphWords(['ar', 'or', 'er'])),
+        // Added later: new lessons go at the end so existing installs keep their order.
+        blendLesson('blend-ow-oi', { en: 'ow and oi words', kk: 'ow және oi сөздері', ru: 'Слова с ow и oi' }, digraphWords(['ow', 'oi'])),
+        blendLesson('blend-short-oo', { en: 'Short oo words: book, cook', kk: 'Қысқа oo сөздері: book, cook', ru: 'Слова с коротким oo: book, cook' }, digraphWords(['oo-short'])),
+        blendLesson('blend-air-ear', { en: 'air and ear words', kk: 'air және ear сөздері', ru: 'Слова с air и ear' }, digraphWords(['air', 'ear'])),
+        blendLesson('blend-sh-ch-2', { en: 'More sh and ch words', kk: 'Тағы sh және ch сөздері', ru: 'Ещё слова с sh и ch' }, digraphWords(['sh', 'ch']).slice(6)),
       ],
     },
   ],
@@ -189,6 +194,9 @@ const phonicsCastle: WorldSeed = {
 
 // ── World 4: Word Space ──
 const byPattern = (p: string) => WORDS.filter((w) => w.pattern === p && w.emoji).map((w) => w.text);
+/** Pictured multi-syllable words of a difficulty (OTHER pattern, three or more sounds). */
+const longWords = (difficulty: number) =>
+  WORDS.filter((w) => w.pattern === 'OTHER' && w.emoji && w.difficulty === difficulty && w.breakdown.split(' ').length >= 4).map((w) => w.text);
 function sightLesson(slug: string, title: L10n, words: string[]): LessonSeed {
   return {
     slug,
@@ -214,6 +222,9 @@ const wordSpace: WorldSeed = {
       lessons: [
         blendLesson('words-ccvc', { en: 'CCVC words: frog, flag', kk: 'CCVC сөздері: frog, flag', ru: 'Слова CCVC: frog, flag' }, byPattern('CCVC'), 'WORD'),
         blendLesson('words-cvcc', { en: 'CVCC words: tent, hand', kk: 'CVCC сөздері: tent, hand', ru: 'Слова CVCC: tent, hand' }, byPattern('CVCC'), 'WORD'),
+        blendLesson('words-ccvc-2', { en: 'CCVC words: clock, truck', kk: 'CCVC сөздері: clock, truck', ru: 'Слова CCVC: clock, truck' }, byPattern('CCVC').slice(6), 'WORD'),
+        blendLesson('words-cvcc-2', { en: 'CVCC words: pink, wind', kk: 'CVCC сөздері: pink, wind', ru: 'Слова CVCC: pink, wind' }, byPattern('CVCC').slice(6), 'WORD'),
+        blendLesson('words-ccvcc', { en: 'Big clusters: drink, scarf', kk: 'Үлкен тіркестер: drink, scarf', ru: 'Большие сочетания: drink, scarf' }, byPattern('CCVCC'), 'WORD'),
       ],
     },
     {
@@ -222,6 +233,15 @@ const wordSpace: WorldSeed = {
       lessons: chunk(SIGHT_WORDS, 8).map((ws, i) =>
         sightLesson(`sight-words-${i + 1}`, { en: `Sight words ${i + 1}`, kk: `Жаттайтын сөздер ${i + 1}`, ru: `Слова для запоминания ${i + 1}` }, ws),
       ),
+    },
+    {
+      slug: 'words-long',
+      title: { en: 'Longer words', kk: 'Ұзын сөздер', ru: 'Длинные слова' },
+      lessons: [
+        blendLesson('words-two-syllables', { en: 'Two-part words: rabbit, panda', kk: 'Екі буынды сөздер: rabbit, panda', ru: 'Слова из двух слогов: rabbit, panda' }, longWords(2), 'WORD'),
+        blendLesson('words-two-syllables-2', { en: 'Two-part words: lemon, robot', kk: 'Екі буынды сөздер: lemon, robot', ru: 'Слова из двух слогов: lemon, robot' }, longWords(2).slice(6), 'WORD'),
+        blendLesson('words-big', { en: 'Big words: elephant, umbrella', kk: 'Үлкен сөздер: elephant, umbrella', ru: 'Большие слова: elephant, umbrella' }, longWords(3), 'WORD'),
+      ],
     },
   ],
 };
@@ -237,22 +257,26 @@ const readingKingdom: WorldSeed = {
     return {
       slug: `reading-${d}`,
       title: { en: `Reading ${d}`, kk: `Оқу ${d}`, ru: `Чтение ${d}` },
-      lessons: [
-        {
-          slug: `reading-sentences-${d}`,
+      // The first lesson keeps the original sentences; sentences added later get a lesson of their own.
+      lessons: [sentences.filter((s) => !s.added), sentences.filter((s) => s.added)]
+        .filter((group) => group.length >= 2)
+        .map((group, i) => ({
+          slug: i === 0 ? `reading-sentences-${d}` : `reading-sentences-${d}-more`,
           kind: 'READING' as const,
-          title: { en: `Read sentences ${d}`, kk: `Сөйлем оқу ${d}`, ru: `Читаем предложения ${d}` },
+          title:
+            i === 0
+              ? { en: `Read sentences ${d}`, kk: `Сөйлем оқу ${d}`, ru: `Читаем предложения ${d}` }
+              : { en: `More sentences ${d}`, kk: `Тағы сөйлемдер ${d}`, ru: `Ещё предложения ${d}` },
           minutes: 8,
           exercises: [
-            { stage: 'PRACTICE' as const, type: 'read_word', config: { words: sentences.map((s) => s.key).slice(0, 3), options: 3 } },
+            { stage: 'PRACTICE' as const, type: 'read_word', config: { words: group.map((s) => s.key).slice(0, 3), options: 3 } },
             {
               stage: 'QUIZ' as const,
               type: 'read_sentence',
-              config: { items: sentences.map((s) => ({ sentence: s.text, answer: s.key })), options: 3 },
+              config: { items: group.map((s) => ({ sentence: s.text, answer: s.key })), options: 3 },
             },
           ],
-        },
-      ],
+        })),
     };
   }),
 };

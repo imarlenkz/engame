@@ -13,6 +13,8 @@ export interface PhonemeRef {
   audioUrl: string | null;
   mouthPosition: LocalizedText | Record<string, string>;
   mouthImageUrl: string | null;
+  /** Short child-facing tip (optional CMS field). */
+  tip?: LocalizedText | Record<string, string> | null;
 }
 
 export interface WordSound {

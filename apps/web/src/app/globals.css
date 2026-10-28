@@ -2,52 +2,266 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────────────────────── «Түнгі аспан» (Night sky) ─────────────────────────
+   Palettes are RGB triplets so Tailwind's opacity modifiers keep working.
+   :root = night theme (children, parents, teachers, public pages).
+   .theme-day = the original light palette (admin area). */
+
 :root {
+  color-scheme: dark;
+  --night: 13 11 38;
+  --surface: 29 26 68;
+
+  --slate-50: 23 20 60;
+  --slate-100: 34 31 82;
+  --slate-200: 46 42 98;
+  --slate-300: 74 70 128;
+  --slate-400: 143 138 184;
+  --slate-500: 185 180 224;
+  --slate-600: 201 196 238;
+  --slate-700: 220 217 245;
+  --slate-800: 238 236 252;
+  --slate-900: 255 255 255;
+
+  --brand-50: 30 30 78;
+  --brand-100: 40 42 104;
+  --brand-200: 58 62 138;
+  --brand-300: 110 130 230;
+  --brand-400: 140 165 255;
+  --brand-500: 66 127 247;
+  --brand-600: 207 214 255;
+  --brand-700: 207 214 255;
+  --brand-800: 226 230 255;
+  --brand-900: 240 242 255;
+
+  --sun-300: 249 221 133;
+  --sun-400: 247 204 75;
+  --sun-500: 247 204 75;
+  --leaf-400: 127 224 168;
+  --leaf-500: 89 211 140;
+  --leaf-600: 89 211 140;
+  --berry-400: 251 131 113;
+  --berry-500: 251 131 113;
+  --berry-600: 255 157 142;
+
+  --green-50: 22 46 52;
+  --green-100: 26 60 60;
+  --green-200: 32 82 72;
+  --green-300: 60 150 105;
+  --green-400: 89 211 140;
+  --green-500: 89 211 140;
+  --green-600: 120 222 160;
+  --green-700: 150 230 180;
+  --green-800: 180 238 202;
+  --green-900: 205 245 220;
+
+  --amber-50: 46 38 50;
+  --amber-100: 58 48 52;
+  --amber-200: 82 66 50;
+  --amber-300: 160 128 50;
+  --amber-400: 247 204 75;
+  --amber-500: 247 204 75;
+  --amber-600: 249 214 110;
+  --amber-700: 250 222 140;
+  --amber-800: 251 230 165;
+  --amber-900: 252 238 190;
+
+  --rose-50: 50 26 52;
+  --rose-100: 64 32 60;
+  --rose-200: 90 42 68;
+  --rose-300: 160 75 80;
+  --rose-400: 251 131 113;
+  --rose-500: 251 131 113;
+  --rose-600: 252 155 140;
+  --rose-700: 253 175 162;
+  --rose-800: 253 195 185;
+  --rose-900: 254 214 207;
+
+  --red-50: 50 26 52;
+  --red-100: 64 32 60;
+  --red-200: 90 42 68;
+  --red-300: 160 75 80;
+  --red-400: 251 131 113;
+  --red-500: 251 131 113;
+  --red-600: 252 155 140;
+  --red-700: 253 175 162;
+  --red-800: 253 195 185;
+  --red-900: 254 214 207;
+
+  --sky-50: 13 11 38;
+  --sky-100: 21 18 56;
+  --sky-200: 42 36 112;
+  --sky-300: 80 90 180;
+  --sky-400: 120 140 230;
+  --sky-500: 140 160 240;
+  --sky-600: 170 185 250;
+  --sky-700: 207 214 255;
+  --sky-800: 225 230 255;
+  --sky-900: 240 242 255;
+
+  --sky-bg: radial-gradient(1.5px 1.5px at 12% 22%, #fffa, transparent), radial-gradient(1px 1px at 38% 70%, #fff8, transparent),
+    radial-gradient(1.5px 1.5px at 66% 14%, #fffa, transparent), radial-gradient(1px 1px at 84% 58%, #fff8, transparent),
+    radial-gradient(1px 1px at 24% 88%, #fff8, transparent), radial-gradient(1px 1px at 92% 30%, #fff6, transparent),
+    radial-gradient(1.5px 1.5px at 52% 46%, #fff6, transparent), radial-gradient(ellipse at 70% 0%, #2a2470, #0d0b26 60%);
+}
+
+.theme-day {
   color-scheme: light;
+  --surface: 255 255 255;
+
+  --slate-50: 248 250 252;
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+  --slate-700: 51 65 85;
+  --slate-800: 30 41 59;
+  --slate-900: 15 23 42;
+
+  --brand-50: 238 246 255;
+  --brand-100: 217 234 255;
+  --brand-200: 188 218 255;
+  --brand-300: 142 194 255;
+  --brand-400: 89 159 255;
+  --brand-500: 51 123 255;
+  --brand-600: 29 92 245;
+  --brand-700: 22 71 225;
+  --brand-800: 25 59 182;
+  --brand-900: 26 55 143;
+
+  --sun-300: 253 230 138;
+  --sun-400: 252 211 77;
+  --sun-500: 245 158 11;
+  --leaf-400: 74 222 128;
+  --leaf-500: 34 197 94;
+  --leaf-600: 22 163 74;
+  --berry-400: 251 113 133;
+  --berry-500: 244 63 94;
+  --berry-600: 225 29 72;
+
+  --green-50: 240 253 244;
+  --green-100: 220 252 231;
+  --green-200: 187 247 208;
+  --green-300: 134 239 172;
+  --green-400: 74 222 128;
+  --green-500: 34 197 94;
+  --green-600: 22 163 74;
+  --green-700: 21 128 61;
+  --green-800: 22 101 52;
+  --green-900: 20 83 45;
+
+  --amber-50: 255 251 235;
+  --amber-100: 254 243 199;
+  --amber-200: 253 230 138;
+  --amber-300: 252 211 77;
+  --amber-400: 251 191 36;
+  --amber-500: 245 158 11;
+  --amber-600: 217 119 6;
+  --amber-700: 180 83 9;
+  --amber-800: 146 64 14;
+  --amber-900: 120 53 15;
+
+  --rose-50: 255 241 242;
+  --rose-100: 255 228 230;
+  --rose-200: 254 205 211;
+  --rose-300: 253 164 175;
+  --rose-400: 251 113 133;
+  --rose-500: 244 63 94;
+  --rose-600: 225 29 72;
+  --rose-700: 190 18 60;
+  --rose-800: 159 18 57;
+  --rose-900: 136 19 55;
+
+  --red-50: 254 242 242;
+  --red-100: 254 226 226;
+  --red-200: 254 202 202;
+  --red-300: 252 165 165;
+  --red-400: 248 113 113;
+  --red-500: 239 68 68;
+  --red-600: 220 38 38;
+  --red-700: 185 28 28;
+  --red-800: 153 27 27;
+  --red-900: 127 29 29;
+
+  --sky-50: 240 249 255;
+  --sky-100: 224 242 254;
+  --sky-200: 186 230 253;
+  --sky-300: 125 211 252;
+  --sky-400: 56 189 248;
+  --sky-500: 14 165 233;
+  --sky-600: 2 132 199;
+  --sky-700: 3 105 161;
+  --sky-800: 7 89 133;
+  --sky-900: 12 74 110;
+
+  @apply bg-slate-50 text-slate-800;
 }
 
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    background: #0d0b26;
   }
   body {
-    @apply bg-sky-50 text-slate-800 antialiased;
+    @apply text-slate-800 antialiased;
+    background: var(--sky-bg);
+    background-color: #0d0b26;
+    background-attachment: fixed;
   }
   :focus-visible {
-    @apply outline outline-4 outline-offset-2 outline-brand-400;
+    @apply outline outline-4 outline-offset-2 outline-star;
+  }
+  ::selection {
+    background: rgb(247 204 75 / 0.4);
+  }
+  dialog {
+    @apply bg-surface text-slate-800;
   }
 }
 
 @layer components {
+  /* Night sky backdrop for full-screen sections (landing, login, lesson). */
+  .sky {
+    background: var(--sky-bg);
+    background-color: #0d0b26;
+  }
+
+  /* Buttons are glowing pills. */
   .btn {
-    @apply inline-flex min-h-12 select-none items-center justify-center gap-2 rounded-2xl px-5 py-3 text-lg font-bold shadow-pop transition active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-12 select-none items-center justify-center gap-2 rounded-full px-6 py-3 text-lg font-black transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+    @apply btn bg-white text-night hover:bg-lilac;
+  }
+  .btn-star {
+    @apply btn bg-star text-night shadow-glow shadow-star/50 hover:brightness-105;
   }
   .btn-success {
-    @apply btn bg-leaf-500 text-white hover:bg-leaf-600;
+    @apply btn bg-mint text-night shadow-glow-sm shadow-mint/50 hover:brightness-105;
   }
   .btn-danger {
-    @apply btn bg-berry-500 text-white hover:bg-berry-600;
+    @apply btn bg-coral text-night shadow-glow-sm shadow-coral/50 hover:brightness-105;
   }
   .btn-ghost {
-    @apply btn bg-white text-slate-700 hover:bg-slate-50;
+    @apply btn bg-white/[0.08] text-white ring-1 ring-white/[0.14] hover:bg-white/[0.14];
   }
   .btn-sm {
-    @apply min-h-9 rounded-xl px-3 py-1.5 text-sm;
+    @apply min-h-9 px-4 py-1.5 text-sm;
   }
+
   .card {
-    @apply rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70;
+    @apply rounded-[26px] bg-white/[0.06] p-5 ring-1 ring-white/[0.12] backdrop-blur-sm;
   }
   .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100;
+    @apply w-full rounded-2xl border border-white/20 bg-white/[0.06] px-4 py-3.5 text-base font-bold text-white placeholder:text-slate-400 focus:border-lilac focus:outline-none focus:ring-4 focus:ring-lilac/20;
   }
   .label {
-    @apply mb-1 block text-sm font-semibold text-slate-700;
+    @apply mb-1.5 block text-sm font-extrabold text-slate-600;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700;
+    @apply inline-flex items-center gap-1 rounded-full bg-white/[0.08] px-3 py-1 text-xs font-extrabold text-slate-700;
   }
   .table {
     @apply w-full text-left text-sm;
@@ -57,6 +271,71 @@
   }
   .table td {
     @apply border-b border-slate-100 px-3 py-2 align-top;
+  }
+
+  /* Glowing sound orbs: «білемін» (star), «қайталау» (coral), «бүгін» (lilac), «алда» (dashed). */
+  .orb {
+    @apply inline-flex shrink-0 flex-col items-center justify-center rounded-full font-black leading-none text-night transition;
+  }
+  .orb-star {
+    @apply orb bg-star shadow-glow-sm shadow-star;
+  }
+  .orb-coral {
+    @apply orb bg-coral shadow-glow-sm shadow-coral;
+  }
+  .orb-lilac {
+    @apply orb bg-lilac shadow-glow shadow-lilac;
+  }
+  .orb-mint {
+    @apply orb bg-mint shadow-glow-sm shadow-mint;
+  }
+  .orb-white {
+    @apply orb bg-white shadow-glow-sm shadow-white/80;
+  }
+  .orb-ahead {
+    @apply orb border-[1.5px] border-dashed border-white/30 text-slate-500;
+  }
+  .kicker {
+    @apply text-sm font-black uppercase tracking-wide text-star;
+  }
+  .placeholder-art {
+    @apply flex items-center justify-center rounded-3xl font-mono text-xs text-slate-400 ring-1 ring-white/[0.14];
+    background: repeating-linear-gradient(135deg, #ffffff0d 0 10px, #ffffff06 10px 20px);
+  }
+
+  /* The admin area keeps the original light look. */
+  :where(.theme-day) .btn-primary {
+    @apply bg-brand-500 text-white shadow-pop hover:bg-brand-600;
+  }
+  :where(.theme-day) .btn-star {
+    @apply bg-sun-400 shadow-pop;
+  }
+  :where(.theme-day) .btn-success {
+    @apply bg-leaf-500 text-white shadow-pop;
+  }
+  :where(.theme-day) .btn-danger {
+    @apply bg-berry-500 text-white shadow-pop;
+  }
+  :where(.theme-day) .btn-ghost {
+    @apply bg-white text-slate-700 shadow-pop ring-0 hover:bg-slate-50;
+  }
+  :where(.theme-day) :is(.btn, .btn-primary, .btn-star, .btn-success, .btn-danger, .btn-ghost) {
+    @apply rounded-2xl font-bold;
+  }
+  :where(.theme-day) .btn-sm {
+    @apply rounded-xl;
+  }
+  :where(.theme-day) .card {
+    @apply rounded-3xl bg-white shadow-sm ring-slate-200/70 backdrop-blur-none;
+  }
+  :where(.theme-day) .input {
+    @apply rounded-xl border-slate-300 bg-white px-3 py-2.5 font-normal text-slate-900 focus:border-brand-500 focus:ring-brand-100;
+  }
+  :where(.theme-day) .label {
+    @apply font-semibold text-slate-700;
+  }
+  :where(.theme-day) .chip {
+    @apply bg-slate-100 px-2.5 py-0.5 font-semibold text-slate-700;
   }
 }
 

@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <RequireRole roles={['ADMIN']}>
       {(me) => (
-        <AdultShell me={me} nav={[{ href: '/admin', label: t('admin.title') }]} wide>
+        <AdultShell me={me} nav={[{ href: '/admin', label: t('admin.title') }]} wide day>
           <div className="flex flex-col gap-6 lg:flex-row">
             <nav aria-label="admin" className="flex gap-1 overflow-x-auto lg:w-52 lg:flex-col lg:overflow-visible">
               {SECTIONS.map(([href, key]) => {

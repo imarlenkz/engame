@@ -45,7 +45,7 @@ export default function OfflinePage() {
       )}
       {syncError ? <ErrorBox error={syncError} /> : null}
       {downloads.isLoading && <Spinner />}
-      {downloads.data && downloads.data.length === 0 && <Empty />}
+      {downloads.data && downloads.data.length === 0 && <Empty>{t('play.noDownloads')}</Empty>}
       <ul className="grid gap-3 sm:grid-cols-2">
         {downloads.data?.map((d) => (
           <li key={d.lessonId} className="card flex items-center justify-between gap-3">

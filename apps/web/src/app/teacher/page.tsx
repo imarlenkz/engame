@@ -48,7 +48,7 @@ export default function TeacherHome() {
       </form>
       {isLoading && <Spinner />}
       {error ? <ErrorBox error={error} onRetry={() => refetch()} /> : null}
-      {data?.length === 0 && <Empty />}
+      {data?.length === 0 && <Empty>{t('teacher.noClasses')}</Empty>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data?.map((c) => (
           <Link key={c.id} href={`/teacher/classes/${c.id}`} className={`card block hover:ring-brand-300 ${c.archived ? 'opacity-60' : ''}`}>

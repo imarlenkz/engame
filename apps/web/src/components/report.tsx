@@ -5,30 +5,30 @@ import type { Report } from '@/lib/types';
 import { ProgressBar, Stat } from './ui';
 
 const BAND_STYLE: Record<string, string> = {
-  MASTERED: 'bg-leaf-500 text-white',
-  GOOD: 'bg-green-200 text-green-900',
-  LEARNING: 'bg-sun-300 text-amber-900',
-  NEEDS_PRACTICE: 'bg-berry-400 text-white',
-  none: 'bg-slate-100 text-slate-400',
+  MASTERED: 'bg-star text-night shadow-glow-sm shadow-star/60',
+  GOOD: 'bg-mint text-night shadow-glow-sm shadow-mint/50',
+  LEARNING: 'bg-lilac text-night',
+  NEEDS_PRACTICE: 'bg-coral text-night shadow-glow-sm shadow-coral/60',
+  none: 'border-[1.5px] border-dashed border-white/25 text-slate-500',
 };
 
 export function SoundGrid({ sounds }: { sounds: Report['sounds'] }) {
   const { t } = useI18n();
   return (
     <div>
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8" lang="en">
+      <div className="grid grid-cols-5 gap-2.5 sm:grid-cols-8 lg:grid-cols-11" lang="en">
         {sounds.map((s) => (
           <div
             key={s.slug}
             title={`/${s.ipa}/ · ${s.score}`}
-            className={`flex flex-col items-center rounded-xl px-1 py-2 ${BAND_STYLE[s.band ?? 'none']}`}
+            className={`mx-auto flex aspect-square w-full max-w-[64px] flex-col items-center justify-center rounded-full ${BAND_STYLE[s.band ?? 'none']}`}
           >
-            <span className="text-lg font-black">{s.symbol}</span>
-            <span className="font-mono text-[11px] opacity-80">/{s.ipa}/</span>
+            <span className="text-base font-black leading-none sm:text-lg">{s.symbol}</span>
+            <span className="font-mono text-[9px] opacity-75 sm:text-[10px]">/{s.ipa}/</span>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+      <div className="mt-4 flex flex-wrap gap-2 text-xs">
         {(['MASTERED', 'GOOD', 'LEARNING', 'NEEDS_PRACTICE', 'none'] as const).map((b) => (
           <span key={b} className={`chip ${BAND_STYLE[b]}`}>
             {t(`report.band.${b}`)}
@@ -54,19 +54,21 @@ export function ReportView({ report }: { report: Report }) {
       </div>
 
       <section className="card">
-        <h2 className="mb-3 font-extrabold">{t('report.weekly')}</h2>
+        <h2 className="mb-3 text-[19px] font-black">{t('report.weekly')}</h2>
         <div className="flex h-32 items-end gap-2">
           {report.weekly.map((d) => (
-            <div key={d.date} className="flex flex-1 flex-col items-center gap-1">
-              <div className="w-full rounded-t-lg bg-brand-400" style={{ height: `${(d.minutes / maxMinutes) * 100}%`, minHeight: d.minutes ? 4 : 0 }} title={t('common.minutes', { n: d.minutes })} />
-              <span className="text-[11px] text-slate-500">{new Date(`${d.date}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' })}</span>
+            <div key={d.date} className="flex h-full flex-1 flex-col items-center gap-1.5">
+              <div className="flex w-full flex-1 items-end">
+                <div className={`w-full rounded-md ${d.minutes ? 'bg-lilac' : 'bg-white/[0.12]'}`} style={{ height: `${Math.max(6, (d.minutes / maxMinutes) * 100)}%` }} title={t('common.minutes', { n: d.minutes })} />
+              </div>
+              <span className="text-[11px] font-bold text-slate-500">{new Date(`${d.date}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' })}</span>
             </div>
           ))}
         </div>
       </section>
 
       <section className="card">
-        <h2 className="mb-3 font-extrabold">{t('report.soundMap')}</h2>
+        <h2 className="mb-3 text-[19px] font-black">{t('report.soundMap')}</h2>
         <div className="mb-3">
           <ProgressBar value={report.soundsMastered} max={report.soundsTotal} />
         </div>
@@ -74,34 +76,54 @@ export function ReportView({ report }: { report: Report }) {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-2 font-extrabold">{t('report.weak')}</h2>
+        <div className="card flex flex-col gap-3.5">
+          <h2 className="text-[19px] font-black">{t('report.weak')}</h2>
           {report.weakSounds.length ? (
-            <div className="flex flex-wrap gap-2" lang="en">
-              {report.weakSounds.map((s) => (
-                <span key={s.slug} className="chip bg-rose-100 text-rose-800">
-                  {s.symbol} /{s.ipa}/
-                </span>
+            <ul className="flex flex-col gap-3" lang="en">
+              {report.weakSounds.slice(0, 6).map((s) => (
+                <li key={s.slug} className="flex items-center gap-3.5">
+                  <span className="orb-coral h-[50px] w-[50px] text-xl">{s.symbol}</span>
+                  <div className="flex flex-col">
+                    <span className="font-extrabold">
+                      {s.symbol} /{s.ipa}/
+                    </span>
+                    <span className="text-sm font-bold text-slate-500">{s.score}%</span>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <p className="text-sm text-slate-500">{t('report.noData')}</p>
+            <p className="text-sm font-bold text-slate-500">{t('report.noData')}</p>
           )}
         </div>
-        <div className="card">
-          <h2 className="mb-2 font-extrabold">{t('report.words')}</h2>
-          {report.wordsLearned.length ? (
-            <div className="flex flex-wrap gap-2" lang="en">
-              {report.wordsLearned.map((w) => (
-                <span key={w.text} className="chip bg-green-100 text-green-800">
-                  {w.emoji} {w.text}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">{t('report.noData')}</p>
+        <div className="flex flex-col gap-3 rounded-[26px] bg-lilac p-5 text-night">
+          <h2 className="text-[19px] font-black">{t('report.homeTitle')}</h2>
+          <p className="font-bold leading-relaxed">{t('report.homeText')}</p>
+          {report.weakSounds.length > 0 && (
+            <p className="font-black" lang="en">
+              {report.weakSounds
+                .slice(0, 3)
+                .map((s) => s.symbol)
+                .join(' · ')}
+            </p>
           )}
+          <span className="mt-auto text-sm font-extrabold opacity-70">{t('report.homeFoot')}</span>
         </div>
+      </section>
+
+      <section className="card">
+        <h2 className="mb-3 text-[19px] font-black">{t('report.words')}</h2>
+        {report.wordsLearned.length ? (
+          <div className="flex flex-wrap gap-2" lang="en">
+            {report.wordsLearned.map((w) => (
+              <span key={w.text} className="chip bg-mint/[0.14] text-sm text-mint">
+                {w.emoji} {w.text}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm font-bold text-slate-500">{t('report.noData')}</p>
+        )}
       </section>
     </div>
   );

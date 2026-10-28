@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#337bff"/>
-  <circle cx="392" cy="128" r="44" fill="#facc15"/>
-  <text x="256" y="350" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, Helvetica, sans-serif" font-weight="700" font-size="250" fill="#ffffff">Ee</text>
+  <defs>
+    <radialGradient id="sky" cx="70%" cy="10%" r="90%"><stop offset="0" stop-color="#2a2470"/><stop offset="0.6" stop-color="#0d0b26"/></radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <circle cx="96" cy="110" r="4" fill="#fff" opacity=".8"/>
+  <circle cx="410" cy="420" r="3" fill="#fff" opacity=".7"/>
+  <circle cx="430" cy="96" r="5" fill="#fff" opacity=".8"/>
+  <circle cx="256" cy="262" r="150" fill="#f7cc4b" filter="url(#glow)" opacity=".7"/>
+  <circle cx="256" cy="262" r="150" fill="#f7cc4b"/>
+  <text x="256" y="320" text-anchor="middle" font-family="Nunito, Arial Rounded MT Bold, Arial, sans-serif" font-weight="900" font-size="168" fill="#0d0b26">En</text>
 </svg>

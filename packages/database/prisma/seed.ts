@@ -6,6 +6,7 @@ import { PrismaClient, type Prisma } from '@prisma/client';
 import { ACHIEVEMENTS, CURRICULUM, DAILY_MISSIONS, GAMES } from './data/curriculum';
 import { LETTERS } from './data/letters';
 import { PHONEMES } from './data/phonemes';
+import { PHONEME_TIPS } from './data/tips';
 import { SENTENCES, WORDS, sentenceTokens } from './data/words';
 import { DEFAULT_SETTINGS } from './data/settings';
 
@@ -25,7 +26,10 @@ function parseBreakdown(text: string, breakdown: string): { grapheme: string; ph
 async function seedPhonemes(): Promise<Map<string, string>> {
   const ids = new Map<string, string>();
   for (const [order, p] of PHONEMES.entries()) {
+    const tip = PHONEME_TIPS[p.slug] ?? null;
     const existing = await prisma.phoneme.findUnique({ where: { slug: p.slug } });
+    // Fill content added to the seed later, without touching anything an admin has written.
+    if (existing && tip && existing.tip == null) await prisma.phoneme.update({ where: { id: existing.id }, data: { tip } });
     const row =
       existing ??
       (await prisma.phoneme.create({
@@ -36,6 +40,7 @@ async function seedPhonemes(): Promise<Map<string, string>> {
           category: p.category,
           voiced: p.voiced,
           mouthPosition: p.mouth,
+          ...(tip ? { tip } : {}),
           difficulty: p.difficulty,
           order: order + 1,
           status: 'PUBLISHED',

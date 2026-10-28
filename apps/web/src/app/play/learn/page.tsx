@@ -19,12 +19,13 @@ interface WorldSummary {
   current: boolean;
 }
 
+/** Each world glows in its own star colour. */
 const THEMES: Record<string, string> = {
-  forest: 'from-green-300 to-emerald-500',
-  island: 'from-cyan-300 to-sky-500',
-  castle: 'from-violet-300 to-purple-500',
-  space: 'from-indigo-400 to-slate-700',
-  kingdom: 'from-amber-300 to-orange-500',
+  forest: 'orb-mint',
+  island: 'orb-lilac',
+  castle: 'orb-coral',
+  space: 'orb-white',
+  kingdom: 'orb-star',
 };
 
 export default function Learn() {
@@ -49,21 +50,21 @@ export default function Learn() {
       <div className="grid gap-4 sm:grid-cols-2">
         {data?.map((w) => {
           const body = (
-            <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-white shadow-pop ${THEMES[w.theme] ?? THEMES.forest} ${w.unlocked ? '' : 'opacity-60 grayscale'}`}>
+            <div className={`card relative overflow-hidden p-6 transition hover:bg-white/[0.1] ${w.current ? 'ring-2 ring-star/70' : ''} ${w.unlocked ? '' : 'opacity-50'}`}>
               <div className="flex items-center gap-4">
-                <span className="text-5xl" aria-hidden>
+                <span className={`${w.unlocked ? (THEMES[w.theme] ?? THEMES.forest) : 'orb-ahead'} h-16 w-16 text-3xl`} aria-hidden>
                   {w.icon}
                 </span>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-black drop-shadow">{pick(w.title)}</h2>
-                  <div className="mt-1 text-sm font-semibold">
+                  <h2 className="text-2xl font-black">{pick(w.title)}</h2>
+                  <div className="mt-1 text-sm font-bold text-slate-500">
                     {t('common.of', { a: w.completed, b: w.lessons })} · <Stars n={Math.min(3, Math.round(w.lessons ? w.stars / w.lessons : 0))} />
                   </div>
                 </div>
                 {!w.unlocked && <span aria-label={t('play.locked')}>🔒</span>}
               </div>
               <div className="mt-3">
-                <ProgressBar value={w.completed} max={w.lessons} color="bg-white" />
+                <ProgressBar value={w.completed} max={w.lessons} />
               </div>
             </div>
           );

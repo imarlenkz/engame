@@ -61,17 +61,19 @@ export function Recorder({ runToken, itemId, onScored }: { runToken: string; ite
     <div className="flex flex-col items-center gap-3">
       <button
         type="button"
-        className={`flex h-24 w-24 items-center justify-center rounded-full text-4xl text-white shadow-pop ${state === 'recording' ? 'animate-pulse bg-berry-500' : 'bg-brand-500'}`}
+        className={`flex h-32 w-32 items-center justify-center rounded-full bg-coral transition-shadow duration-300 sm:h-[150px] sm:w-[150px] ${
+          state === 'recording' ? 'shadow-[0_0_0_18px_rgba(251,131,113,.18),0_0_0_36px_rgba(251,131,113,.08),0_0_70px_#fb8371]' : 'shadow-[0_0_40px_#fb8371]'
+        }`}
         onClick={state === 'recording' ? stop : start}
         disabled={state === 'sending'}
         aria-label={state === 'recording' ? t('lesson.recording') : t('lesson.record')}
       >
-        {state === 'sending' ? '…' : '🎤'}
+        {state === 'sending' ? <span className="text-4xl font-black text-night">…</span> : <span aria-hidden className="block h-[62px] w-[38px] rounded-[19px] bg-night" />}
       </button>
-      <p className="text-sm font-semibold text-slate-600">{state === 'recording' ? t('lesson.recording') : t('lesson.record')}</p>
+      <p className={`text-[22px] font-black ${state === 'recording' ? 'text-star' : 'text-white'}`}>{state === 'recording' ? t('lesson.recording') : t('lesson.record')}</p>
       {result && (
         <div className="text-center">
-          <p className={`text-xl font-black ${result.score >= 60 ? 'text-leaf-600' : 'text-amber-600'}`}>{t('lesson.speakScore', { n: result.score })}</p>
+          <p className={`text-xl font-black ${result.score >= 60 ? 'text-mint' : 'text-star'}`}>{t('lesson.speakScore', { n: result.score })}</p>
           {result.transcript && <p className="text-sm text-slate-500">{t('lesson.speakHeard', { text: result.transcript })}</p>}
         </div>
       )}

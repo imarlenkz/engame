@@ -11,11 +11,11 @@ export const metadata: Metadata = {
   description: 'English phonics for primary school: 44 sounds, letters, blending and reading through play.',
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icons/icon.svg', apple: '/icons/icon-192.png' },
-  appleWebApp: { capable: true, title: 'EnGame', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'EnGame', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#337bff',
+  themeColor: '#0d0b26',
   width: 'device-width',
   initialScale: 1,
 };
@@ -25,6 +25,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = isLocale(raw) ? raw : null;
   return (
     <html lang={locale ?? 'kk'}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-dvh font-sans">
         <Providers locale={locale}>
           <OfflineBanner />

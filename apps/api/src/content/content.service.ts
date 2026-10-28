@@ -115,6 +115,7 @@ export class ContentService {
         audioUrl: this.media.url(p.audio?.storageKey),
         mouthPosition: p.mouthPosition as LocalizedText,
         mouthImageUrl: this.media.url(p.mouthImage?.storageKey),
+        tip: (p.tip as LocalizedText | null) ?? null,
       })),
       words: words.map((w) => ({
         text: w.text,
